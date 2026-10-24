@@ -1,0 +1,154 @@
+{
+ "comp": "eng.1",
+ "syear": 2025,
+ "n_matches": 191,
+ "weeks": 21,
+ "divergences": 0,
+ "corr_means": 0.9998567688900737,
+ "max_abs_mean_diff": 0.015015432666067419,
+ "sd_ratio_mean": 0.9640806401513743,
+ "teams": [
+  {
+   "name": "Brighton & Hove Albion",
+   "nuts_mean": 0.02030405870596271,
+   "nuts_sd": 0.1453957226238285,
+   "filter_mean": 0.02224181802043964,
+   "filter_sd": 0.14293617685399
+  },
+  {
+   "name": "Brentford",
+   "nuts_mean": 0.0279388749943924,
+   "nuts_sd": 0.13849689057926806,
+   "filter_mean": 0.02464436858512068,
+   "filter_sd": 0.14240129482719888
+  },
+  {
+   "name": "AFC Bournemouth",
+   "nuts_mean": -0.1292606961609139,
+   "nuts_sd": 0.1311667246007237,
+   "filter_mean": -0.13397810670208637,
+   "filter_sd": 0.1446830701649605
+  },
+  {
+   "name": "Leeds United",
+   "nuts_mean": -0.3496809604725681,
+   "nuts_sd": 0.1689062066685815,
+   "filter_mean": -0.34616758357965793,
+   "filter_sd": 0.17254296436567737
+  },
+  {
+   "name": "Arsenal",
+   "nuts_mean": 0.6715466593968997,
+   "nuts_sd": 0.13872860971786316,
+   "filter_mean": 0.6774647740869888,
+   "filter_sd": 0.1460555927580776
+  },
+  {
+   "name": "Manchester United",
+   "nuts_mean": -0.00550209947331577,
+   "nuts_sd": 0.13711772197377806,
+   "filter_mean": -0.0040154877398392765,
+   "filter_sd": 0.14488924958911775
+  },
+  {
+   "name": "Newcastle United",
+   "nuts_mean": 0.18765215493364518,
+   "nuts_sd": 0.148592306691502,
+   "filter_mean": 0.18715790123893408,
+   "filter_sd": 0.14264398131297015
+  },
+  {
+   "name": "Aston Villa",
+   "nuts_mean": 0.1523305452112384,
+   "nuts_sd": 0.13441709313407277,
+   "filter_mean": 0.16221704821257849,
+   "filter_sd": 0.14262946897995038
+  },
+  {
+   "name": "Chelsea",
+   "nuts_mean": 0.24566509470613784,
+   "nuts_sd": 0.13265756549695193,
+   "filter_mean": 0.2494699859360409,
+   "filter_sd": 0.14383487127999278
+  },
+  {
+   "name": "Liverpool",
+   "nuts_mean": 0.43736047766211733,
+   "nuts_sd": 0.1343913378413841,
+   "filter_mean": 0.43290535669215446,
+   "filter_sd": 0.14292539736659593
+  },
+  {
+   "name": "Sunderland",
+   "nuts_mean": -0.24582846647320322,
+   "nuts_sd": 0.1677074651638746,
+   "filter_mean": -0.23985037549746038,
+   "filter_sd": 0.17461342224256057
+  },
+  {
+   "name": "Tottenham Hotspur",
+   "nuts_mean": 0.05405559776060204,
+   "nuts_sd": 0.1381375524597478,
+   "filter_mean": 0.053577512410945674,
+   "filter_sd": 0.1404430981545834
+  },
+  {
+   "name": "Everton",
+   "nuts_mean": -0.13334451785122675,
+   "nuts_sd": 0.14202806132954418,
+   "filter_mean": -0.12628748558090727,
+   "filter_sd": 0.15002602622709418
+  },
+  {
+   "name": "Fulham",
+   "nuts_mean": -0.06910815164620317,
+   "nuts_sd": 0.14727805977551883,
+   "filter_mean": -0.07464293764473383,
+   "filter_sd": 0.1453828211828942
+  },
+  {
+   "name": "West Ham United",
+   "nuts_mean": -0.3137626517557778,
+   "nuts_sd": 0.13319050310987762,
+   "filter_mean": -0.3139327781899997,
+   "filter_sd": 0.14269537561001808
+  },
+  {
+   "name": "Burnley",
+   "nuts_mean": -0.5149409274739174,
+   "nuts_sd": 0.15461192073506663,
+   "filter_mean": -0.5175893479109877,
+   "filter_sd": 0.1721118491352383
+  },
+  {
+   "name": "Wolverhampton Wanderers",
+   "nuts_mean": -0.4659851841442383,
+   "nuts_sd": 0.1402241508600224,
+   "filter_mean": -0.4810006168103057,
+   "filter_sd": 0.14511646869540115
+  },
+  {
+   "name": "Manchester City",
+   "nuts_mean": 0.6928304102498134,
+   "nuts_sd": 0.146347188635722,
+   "filter_mean": 0.6921567513437461,
+   "filter_sd": 0.14492862841733636
+  },
+  {
+   "name": "Crystal Palace",
+   "nuts_mean": -0.04608241325284317,
+   "nuts_sd": 0.14471738598012135,
+   "filter_mean": -0.04024554605870448,
+   "filter_sd": 0.1467854393524612
+  },
+  {
+   "name": "Nottingham Forest",
+   "nuts_mean": -0.2161878049166035,
+   "nuts_sd": 0.14009118854675792,
+   "filter_mean": -0.2241252508122662,
+   "filter_sd": 0.14502736779868203
+  }
+ ],
+ "position_tv_mean": 0.021983333333333334,
+ "position_tv_max": 0.042333333333333334
+}

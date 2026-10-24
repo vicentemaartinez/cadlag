@@ -1,0 +1,249 @@
+{
+ "tau": 0.12,
+ "n_transfers": 8377,
+ "n_pairs": 799,
+ "cv": {
+  "0.0": {
+   "cv_loglik": -6265.229449025173,
+   "kappa": 1.0
+  },
+  "0.5": {
+   "cv_loglik": -6266.4914351323305,
+   "kappa": 1.7727994457103555
+  },
+  "1.0": {
+   "cv_loglik": -6266.11641964012,
+   "kappa": 2.0840946678041927
+  },
+  "2.0": {
+   "cv_loglik": -6267.443791462145,
+   "kappa": 2.3292677404334587
+  },
+  "3.0": {
+   "cv_loglik": -6271.428072986757,
+   "kappa": 2.176577846546861
+  },
+  "5.0": {
+   "cv_loglik": -6280.763303888803,
+   "kappa": 1.7414714118705907
+  }
+ },
+ "beta_best": 0.0,
+ "kappa": 2.3292677404334587,
+ "bt_hierarchy": {
+  "arg.1": -0.5852395177227925,
+  "bra.1": -0.2098188616274368,
+  "bra.2": 0.12117021930771221,
+  "chi.1": -0.7429331042426597,
+  "eng.1": 0.0,
+  "eng.2": 0.17554941527329337,
+  "esp.1": -0.10489515999542015,
+  "esp.2": 0.3451251042592691,
+  "fra.1": -0.43188797390141154,
+  "fra.2": -0.45124185509940773,
+  "ger.1": -0.166198027081694,
+  "ger.2": 0.06838346078530189,
+  "ita.1": -0.020638676076536133,
+  "ita.2": 0.4520565797774565
+ },
+ "corr_bt_vs_matches": 0.13456120918889353,
+ "spearman_bt_vs_matches": -0.02417582417582418,
+ "offsets": [
+  {
+   "league": "chi.1",
+   "season": 2026,
+   "attack_base": -0.7132,
+   "defense_base": -0.1359,
+   "net_base": -0.8491,
+   "net_sd_base": 0.3657,
+   "attack_traspasos": -0.6103,
+   "defense_traspasos": -0.0574,
+   "net_traspasos": -0.6677,
+   "net_sd_traspasos": 0.2237
+  },
+  {
+   "league": "eng.2",
+   "season": 2026,
+   "attack_base": -0.2322,
+   "defense_base": -0.2322,
+   "net_base": -0.4644,
+   "net_sd_base": 0.1204,
+   "attack_traspasos": -0.2099,
+   "defense_traspasos": -0.2099,
+   "net_traspasos": -0.4198,
+   "net_sd_traspasos": 0.1197
+  },
+  {
+   "league": "bra.1",
+   "season": 2026,
+   "attack_base": -0.315,
+   "defense_base": 0.1307,
+   "net_base": -0.1843,
+   "net_sd_base": 0.3212,
+   "attack_traspasos": -0.2017,
+   "defense_traspasos": 0.2242,
+   "net_traspasos": 0.0225,
+   "net_sd_traspasos": 0.1444
+  },
+  {
+   "league": "arg.1",
+   "season": 2026,
+   "attack_base": -0.6953,
+   "defense_base": 0.2066,
+   "net_base": -0.4887,
+   "net_sd_base": 0.3448,
+   "attack_traspasos": -0.5938,
+   "defense_traspasos": 0.2827,
+   "net_traspasos": -0.3111,
+   "net_sd_traspasos": 0.187
+  },
+  {
+   "league": "bra.2",
+   "season": 2026,
+   "attack_base": -0.4039,
+   "defense_base": -0.1506,
+   "net_base": -0.5545,
+   "net_sd_base": 0.3221,
+   "attack_traspasos": -0.287,
+   "defense_traspasos": -0.0542,
+   "net_traspasos": -0.3412,
+   "net_sd_traspasos": 0.1493
+  },
+  {
+   "league": "eng.1",
+   "season": 2026,
+   "attack_base": 0.0,
+   "defense_base": -0.0,
+   "net_base": 0.0,
+   "net_sd_base": 0.0001,
+   "attack_traspasos": 0.0,
+   "defense_traspasos": 0.0,
+   "net_traspasos": 0.0,
+   "net_sd_traspasos": 0.0001
+  },
+  {
+   "league": "esp.1",
+   "season": 2026,
+   "attack_base": 0.0786,
+   "defense_base": -0.1694,
+   "net_base": -0.0908,
+   "net_sd_base": 0.1479,
+   "attack_traspasos": 0.1509,
+   "defense_traspasos": -0.0873,
+   "net_traspasos": 0.0636,
+   "net_sd_traspasos": 0.1349
+  },
+  {
+   "league": "fra.2",
+   "season": 2026,
+   "attack_base": -0.3203,
+   "defense_base": -0.3203,
+   "net_base": -0.6406,
+   "net_sd_base": 0.1728,
+   "attack_traspasos": -0.3116,
+   "defense_traspasos": -0.3116,
+   "net_traspasos": -0.6231,
+   "net_sd_traspasos": 0.1553
+  },
+  {
+   "league": "esp.2",
+   "season": 2026,
+   "attack_base": -0.2352,
+   "defense_base": -0.2352,
+   "net_base": -0.4704,
+   "net_sd_base": 0.1547,
+   "attack_traspasos": -0.163,
+   "defense_traspasos": -0.163,
+   "net_traspasos": -0.3259,
+   "net_sd_traspasos": 0.1408
+  },
+  {
+   "league": "fra.1",
+   "season": 2026,
+   "attack_base": 0.032,
+   "defense_base": -0.2138,
+   "net_base": -0.1818,
+   "net_sd_base": 0.1667,
+   "attack_traspasos": 0.0336,
+   "defense_traspasos": -0.2033,
+   "net_traspasos": -0.1696,
+   "net_sd_traspasos": 0.1499
+  },
+  {
+   "league": "ger.2",
+   "season": 2026,
+   "attack_base": -0.2571,
+   "defense_base": -0.2571,
+   "net_base": -0.5143,
+   "net_sd_base": 0.1638,
+   "attack_traspasos": -0.2165,
+   "defense_traspasos": -0.2165,
+   "net_traspasos": -0.4329,
+   "net_sd_traspasos": 0.1469
+  },
+  {
+   "league": "ger.1",
+   "season": 2026,
+   "attack_base": 0.0896,
+   "defense_base": -0.2167,
+   "net_base": -0.1271,
+   "net_sd_base": 0.1638,
+   "attack_traspasos": 0.1314,
+   "defense_traspasos": -0.1654,
+   "net_traspasos": -0.034,
+   "net_sd_traspasos": 0.1474
+  },
+  {
+   "league": "ita.1",
+   "season": 2026,
+   "attack_base": 0.0097,
+   "defense_base": -0.1357,
+   "net_base": -0.126,
+   "net_sd_base": 0.1572,
+   "attack_traspasos": 0.121,
+   "defense_traspasos": -0.0162,
+   "net_traspasos": 0.1048,
+   "net_sd_traspasos": 0.1385
+  },
+  {
+   "league": "ita.2",
+   "season": 2026,
+   "attack_base": -0.3159,
+   "defense_base": -0.3159,
+   "net_base": -0.6318,
+   "net_sd_base": 0.1613,
+   "attack_traspasos": -0.2124,
+   "defense_traspasos": -0.2124,
+   "net_traspasos": -0.4249,
+   "net_sd_traspasos": 0.1414
+  }
+ ],
+ "resistance_eng_south": {
+  "base": {
+   "bra.1": 0.10313783820522829,
+   "arg.1": 0.11891968795883526,
+   "chi.1": 0.1337110015307075
+  },
+  "traspasos": {
+   "bra.1": 0.020860942614964895,
+   "arg.1": 0.034955049852427506,
+   "chi.1": 0.05004390599989557
+  }
+ },
+ "sd_ratio": {
+  "chi.1": 0.612,
+  "eng.2": 0.994,
+  "bra.1": 0.45,
+  "arg.1": 0.542,
+  "bra.2": 0.464,
+  "eng.1": 1.0,
+  "esp.1": 0.912,
+  "fra.2": 0.898,
+  "esp.2": 0.91,
+  "fra.1": 0.899,
+  "ger.2": 0.897,
+  "ger.1": 0.899,
+  "ita.1": 0.881,
+  "ita.2": 0.877
+ }
+}

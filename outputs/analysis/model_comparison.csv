@@ -1,0 +1,319 @@
+liga,variante,hiper,equipo,titulo,descenso,pos_esp
+eng.1,dc,-,Manchester City,0.64045,0.0,1.52525
+eng.1,dc,-,Arsenal,0.2859,0.0,2.24015
+eng.1,dc,-,Brighton & Hove Albion,0.0237,0.0018499999999999999,5.25065
+eng.1,dc,-,Chelsea,0.01515,0.0035499999999999998,5.9628
+eng.1,dc,-,Liverpool,0.027,0.0009499999999999999,4.8328
+eng.1,dc,-,Brentford,0.003,0.0248,8.50565
+eng.1,dc,-,Everton,0.0003,0.09325,11.62235
+eng.1,dc,-,Leeds United,0.00075,0.10325,11.49595
+eng.1,dc,-,Hull City,0.00015,0.30385,14.5836
+eng.1,dc,-,Ipswich Town,5e-05,0.38980000000000004,15.385550000000002
+eng.1,dc,-,Newcastle United,0.0006,0.06615,10.594949999999999
+eng.1,dc,-,Aston Villa,0.00095,0.043750000000000004,9.685400000000001
+eng.1,dc,-,Crystal Palace,0.0002,0.16534999999999997,12.7898
+eng.1,dc,-,Manchester United,0.00145,0.041100000000000005,9.402499999999998
+eng.1,dc,-,Coventry City,5e-05,0.5127999999999999,16.45975
+eng.1,dc,-,Fulham,5e-05,0.24264999999999998,14.037849999999999
+eng.1,dc,-,Nottingham Forest,0.0001,0.1881,13.1828
+eng.1,dc,-,Sunderland,0.0,0.3889,15.481
+eng.1,dc,-,AFC Bournemouth,0.00015,0.16705,12.757700000000002
+eng.1,dc,-,Tottenham Hotspur,0.0,0.26285000000000003,14.203499999999998
+eng.1,shots2,produccion,Manchester City,0.4893,0.0,1.9083
+eng.1,shots2,produccion,Arsenal,0.4007,0.0,2.07645
+eng.1,shots2,produccion,Brighton & Hove Albion,0.04055,0.0024000000000000002,5.157450000000001
+eng.1,shots2,produccion,Chelsea,0.01175,0.013849999999999998,7.20265
+eng.1,shots2,produccion,Liverpool,0.03935,0.00205,5.0141
+eng.1,shots2,produccion,Brentford,0.00175,0.0681,10.396349999999998
+eng.1,shots2,produccion,Everton,0.00095,0.0857,11.1784
+eng.1,shots2,produccion,Leeds United,0.00105,0.1147,11.51685
+eng.1,shots2,produccion,Hull City,0.0,0.4391,15.85595
+eng.1,shots2,produccion,Ipswich Town,5e-05,0.37160000000000004,15.126949999999999
+eng.1,shots2,produccion,Newcastle United,0.00055,0.14150000000000001,12.237750000000002
+eng.1,shots2,produccion,Aston Villa,0.0008,0.09655000000000001,11.17455
+eng.1,shots2,produccion,Crystal Palace,5e-05,0.22935,13.6579
+eng.1,shots2,produccion,Manchester United,0.0107,0.01615,7.4239999999999995
+eng.1,shots2,produccion,Coventry City,0.0,0.5165500000000001,16.43095
+eng.1,shots2,produccion,Fulham,0.0003,0.18115,12.93905
+eng.1,shots2,produccion,Nottingham Forest,0.0005,0.1754,12.73085
+eng.1,shots2,produccion,Sunderland,0.00015,0.22715000000000002,13.4114
+eng.1,shots2,produccion,AFC Bournemouth,0.0013,0.1089,11.254
+eng.1,shots2,produccion,Tottenham Hotspur,0.0002,0.2098,13.3061
+eng.1,shots2_2016,backtest,Manchester City,0.4851,5e-05,1.9407499999999998
+eng.1,shots2_2016,backtest,Arsenal,0.39305,0.0001,2.141
+eng.1,shots2_2016,backtest,Brighton & Hove Albion,0.0479,0.0029000000000000002,5.139399999999999
+eng.1,shots2_2016,backtest,Chelsea,0.0125,0.01745,7.298150000000001
+eng.1,shots2_2016,backtest,Liverpool,0.04165,0.0023499999999999997,5.1848
+eng.1,shots2_2016,backtest,Brentford,0.00125,0.08625,10.786799999999998
+eng.1,shots2_2016,backtest,Everton,0.001,0.1019,11.284949999999997
+eng.1,shots2_2016,backtest,Leeds United,0.002,0.11985000000000001,11.383350000000002
+eng.1,shots2_2016,backtest,Hull City,5e-05,0.353,14.84235
+eng.1,shots2_2016,backtest,Ipswich Town,0.0002,0.2965,14.08875
+eng.1,shots2_2016,backtest,Newcastle United,0.0003,0.16855,12.5632
+eng.1,shots2_2016,backtest,Aston Villa,0.0013,0.11995,11.569149999999999
+eng.1,shots2_2016,backtest,Crystal Palace,0.0004,0.2621,13.88015
+eng.1,shots2_2016,backtest,Manchester United,0.0112,0.0237,7.658849999999999
+eng.1,shots2_2016,backtest,Coventry City,0.0001,0.41905000000000003,15.38655
+eng.1,shots2_2016,backtest,Fulham,0.0002,0.2,13.066250000000002
+eng.1,shots2_2016,backtest,Nottingham Forest,0.00035,0.2091,13.115049999999998
+eng.1,shots2_2016,backtest,Sunderland,0.0004,0.2232,13.1959
+eng.1,shots2_2016,backtest,AFC Bournemouth,0.00075,0.1378,11.7154
+eng.1,shots2_2016,backtest,Tottenham Hotspur,0.0003,0.2562,13.7592
+esp.1,dc,-,Barcelona,0.8638,0.0,1.1618
+esp.1,dc,-,Atlético Madrid,0.04255,0.0,2.845
+esp.1,dc,-,Real Betis,0.00085,0.00039999999999999996,5.1057
+esp.1,dc,-,Real Madrid,0.09235,0.0,2.3868
+esp.1,dc,-,Sevilla,5e-05,0.017499999999999998,8.783700000000003
+esp.1,dc,-,Real Sociedad,0.0001,0.01625,8.3122
+esp.1,dc,-,Alavés,0.0,0.09330000000000001,11.628799999999998
+esp.1,dc,-,Deportivo,0.0,0.20935,13.654000000000002
+esp.1,dc,-,Athletic Club,0.00015,0.01845,8.330499999999999
+esp.1,dc,-,Villarreal,0.00015,0.0064,7.2911
+esp.1,dc,-,Celta Vigo,0.0,0.07395,11.124899999999998
+esp.1,dc,-,Espanyol,0.0,0.25625,14.3666
+esp.1,dc,-,Rayo Vallecano,0.0,0.11019999999999999,11.923599999999999
+esp.1,dc,-,Getafe,0.0,0.19510000000000002,13.578949999999999
+esp.1,dc,-,Racing Santander,0.0,0.42255,15.759450000000001
+esp.1,dc,-,Osasuna,0.0,0.2136,13.729349999999998
+esp.1,dc,-,Levante,0.0,0.2512,14.136499999999998
+esp.1,dc,-,Elche,0.0,0.23225,13.96895
+esp.1,dc,-,Valencia,0.0,0.3025,14.840599999999998
+esp.1,dc,-,Málaga,0.0,0.58075,17.0715
+esp.1,shots2,backtest,Barcelona,0.8494,0.0,1.18185
+esp.1,shots2,backtest,Atlético Madrid,0.0599,0.0,2.7424
+esp.1,shots2,backtest,Real Betis,0.0009,0.0007000000000000001,5.414599999999999
+esp.1,shots2,backtest,Real Madrid,0.08935,0.0,2.47185
+esp.1,shots2,backtest,Sevilla,0.0,0.021900000000000003,8.986250000000002
+esp.1,shots2,backtest,Real Sociedad,0.0,0.02345,8.9616
+esp.1,shots2,backtest,Alavés,5e-05,0.07115,11.078249999999997
+esp.1,shots2,backtest,Deportivo,0.0,0.18595,13.40785
+esp.1,shots2,backtest,Athletic Club,0.0,0.01715,8.20655
+esp.1,shots2,backtest,Villarreal,0.0004,0.00335,6.52485
+esp.1,shots2,backtest,Celta Vigo,0.0,0.1228,12.2911
+esp.1,shots2,backtest,Espanyol,0.0,0.2308,14.1148
+esp.1,shots2,backtest,Rayo Vallecano,0.0,0.0719,10.929050000000002
+esp.1,shots2,backtest,Getafe,0.0,0.31245,15.0159
+esp.1,shots2,backtest,Racing Santander,0.0,0.3629,15.289750000000002
+esp.1,shots2,backtest,Osasuna,0.0,0.17235,13.200399999999998
+esp.1,shots2,backtest,Levante,0.0,0.2272,13.87545
+esp.1,shots2,backtest,Elche,0.0,0.16835,13.168299999999999
+esp.1,shots2,backtest,Valencia,0.0,0.395,15.78815
+esp.1,shots2,backtest,Málaga,0.0,0.6126,17.35105
+ita.1,dc,-,Internazionale,0.7618,0.0,1.3850500000000003
+ita.1,dc,-,AS Roma,0.13185,0.0,3.0982
+ita.1,dc,-,Lazio,0.0171,0.00015,5.805000000000001
+ita.1,dc,-,Frosinone,0.0,0.07785,12.607349999999999
+ita.1,dc,-,Cagliari,0.0002,0.02495,10.602949999999998
+ita.1,dc,-,AC Milan,0.02445,0.00025,5.27465
+ita.1,dc,-,Juventus,0.03235,0.0001,4.89625
+ita.1,dc,-,Como,0.00645,0.00145,7.010800000000001
+ita.1,dc,-,Napoli,0.01335,0.00035,5.82455
+ita.1,dc,-,Atalanta,0.0122,0.0005,6.306449999999999
+ita.1,dc,-,Sassuolo,5e-05,0.13319999999999999,13.515949999999998
+ita.1,dc,-,Torino,5e-05,0.0991,12.809399999999998
+ita.1,dc,-,Lecce,0.0,0.4673,16.653950000000002
+ita.1,dc,-,Bologna,0.0001,0.040600000000000004,11.24505
+ita.1,dc,-,Udinese,0.0,0.15805000000000002,13.7772
+ita.1,dc,-,Monza,0.0,0.5397,17.0763
+ita.1,dc,-,Parma,0.0,0.38295,16.0391
+ita.1,dc,-,Fiorentina,5e-05,0.09775,12.6903
+ita.1,dc,-,Genoa,0.0,0.31205,15.5131
+ita.1,dc,-,Venezia,0.0,0.6637,17.868399999999998
+ita.1,shots2,backtest,Internazionale,0.6915,0.0,1.53945
+ita.1,shots2,backtest,AS Roma,0.10615,0.0,3.51365
+ita.1,shots2,backtest,Lazio,0.005,0.00325,7.594600000000001
+ita.1,shots2,backtest,Frosinone,0.0,0.05790000000000001,11.75005
+ita.1,shots2,backtest,Cagliari,0.0002,0.03495,10.886800000000003
+ita.1,shots2,backtest,AC Milan,0.01195,0.0006,6.407399999999999
+ita.1,shots2,backtest,Juventus,0.1043,5e-05,3.6366500000000004
+ita.1,shots2,backtest,Como,0.0595,0.0,4.37665
+ita.1,shots2,backtest,Napoli,0.0186,0.00030000000000000003,5.642949999999999
+ita.1,shots2,backtest,Atalanta,0.00255,0.009600000000000001,8.63495
+ita.1,shots2,backtest,Sassuolo,0.0001,0.0883,12.2765
+ita.1,shots2,backtest,Torino,5e-05,0.09785,12.59565
+ita.1,shots2,backtest,Lecce,0.0,0.5897,17.35735
+ita.1,shots2,backtest,Bologna,0.0001,0.0684,11.959299999999999
+ita.1,shots2,backtest,Udinese,0.0,0.1495,13.478050000000001
+ita.1,shots2,backtest,Monza,0.0,0.34055,15.5537
+ita.1,shots2,backtest,Parma,0.0,0.39835,16.048099999999998
+ita.1,shots2,backtest,Fiorentina,0.0,0.1503,13.44665
+ita.1,shots2,backtest,Genoa,0.0,0.26055,14.96065
+ita.1,shots2,backtest,Venezia,0.0,0.74985,18.3409
+ger.1,dc,-,Bayern Munich,0.9016,0.0,1.12235
+ger.1,dc,-,Borussia Dortmund,0.04895,5e-05,3.14925
+ger.1,dc,-,SC Freiburg,0.0025,0.00275,6.578850000000001
+ger.1,dc,-,Bayer Leverkusen,0.037,5e-05,3.4604
+ger.1,dc,-,Mainz,0.0002,0.015050000000000001,8.6136
+ger.1,dc,-,SV Elversberg,0.0,0.08665,11.20255
+ger.1,dc,-,RB Leipzig,0.00835,0.0006000000000000001,4.714900000000001
+ger.1,dc,-,Werder Bremen,0.0,0.07385,11.070649999999999
+ger.1,dc,-,Hamburg SV,0.0,0.1608,12.7906
+ger.1,dc,-,FC Augsburg,0.0,0.0538,10.492600000000001
+ger.1,dc,-,Eintracht Frankfurt,0.00035,0.027049999999999998,9.258
+ger.1,dc,-,FC Cologne,0.0,0.20400000000000001,13.312999999999999
+ger.1,dc,-,VfB Stuttgart,0.00105,0.00475,6.74705
+ger.1,dc,-,Schalke 04,0.0,0.32125000000000004,14.254000000000001
+ger.1,dc,-,SC Paderborn 07,0.0,0.34345,14.465649999999998
+ger.1,dc,-,1. FC Union Berlin,0.0,0.2656,13.934149999999999
+ger.1,dc,-,TSG Hoffenheim,0.0,0.09315,11.336500000000001
+ger.1,dc,-,Borussia Mönchengladbach,0.0,0.34715,14.495899999999999
+ger.1,shots2,backtest,Bayern Munich,0.92565,0.0,1.0925500000000001
+ger.1,shots2,backtest,Borussia Dortmund,0.0406,5e-05,3.3011000000000004
+ger.1,shots2,backtest,SC Freiburg,0.00515,0.0027,6.021599999999999
+ger.1,shots2,backtest,Bayer Leverkusen,0.0213,0.0006000000000000001,4.1263
+ger.1,shots2,backtest,Mainz,0.0007,0.014849999999999999,8.60965
+ger.1,shots2,backtest,SV Elversberg,0.0,0.0769,11.595950000000002
+ger.1,shots2,backtest,RB Leipzig,0.004,0.0032,5.999899999999999
+ger.1,shots2,backtest,Werder Bremen,0.0002,0.033299999999999996,9.6502
+ger.1,shots2,backtest,Hamburg SV,0.0,0.10665,12.0512
+ger.1,shots2,backtest,FC Augsburg,0.0,0.0404,9.877699999999999
+ger.1,shots2,backtest,Eintracht Frankfurt,0.0002,0.04425,10.0143
+ger.1,shots2,backtest,FC Cologne,0.0001,0.13675,12.487
+ger.1,shots2,backtest,VfB Stuttgart,0.0018,0.0044,6.522
+ger.1,shots2,backtest,Schalke 04,0.0,0.32065,14.5429
+ger.1,shots2,backtest,SC Paderborn 07,0.0,0.3531,14.806000000000001
+ger.1,shots2,backtest,1. FC Union Berlin,0.0,0.26105,13.918399999999998
+ger.1,shots2,backtest,TSG Hoffenheim,0.0003,0.06309999999999999,10.61335
+ger.1,shots2,backtest,Borussia Mönchengladbach,0.0,0.53805,15.769900000000003
+fra.1,dc,-,Paris Saint-Germain,0.6592,0.0,1.6570500000000001
+fra.1,dc,-,Lille,0.0552,0.0003,5.1034999999999995
+fra.1,dc,-,AS Monaco,0.11915,5e-05,4.08745
+fra.1,dc,-,Stade Rennais,0.04035,0.0017000000000000001,5.95765
+fra.1,dc,-,Lyon,0.0564,0.00045000000000000004,5.359
+fra.1,dc,-,Paris FC,0.00445,0.0206,9.421249999999999
+fra.1,dc,-,Lens,0.0357,0.00135,5.96915
+fra.1,dc,-,Brest,0.00105,0.036199999999999996,10.5097
+fra.1,dc,-,Toulouse,0.0029,0.023799999999999998,9.7987
+fra.1,dc,-,Lorient,0.0007,0.07945,11.7816
+fra.1,dc,-,Nice,0.00065,0.05845,11.36025
+fra.1,dc,-,Strasbourg,0.0036,0.018750000000000003,9.288299999999998
+fra.1,dc,-,Angers,5e-05,0.27135,14.4416
+fra.1,dc,-,Marseille,0.0203,0.0035499999999999998,6.7474
+fra.1,dc,-,Le Mans,5e-05,0.28285000000000005,14.319950000000002
+fra.1,dc,-,AJ Auxerre,0.00025,0.18885000000000002,13.569749999999999
+fra.1,dc,-,Troyes,0.0,0.58585,16.2019
+fra.1,dc,-,Le Havre AC,0.0,0.42645,15.425799999999999
+fra.1,shots2,produccion,Paris Saint-Germain,0.7686,0.0,1.39875
+fra.1,shots2,produccion,Lille,0.0482,0.00035,4.85635
+fra.1,shots2,produccion,AS Monaco,0.07105,0.00035,4.5325
+fra.1,shots2,produccion,Stade Rennais,0.02895,0.0018,6.08925
+fra.1,shots2,produccion,Lyon,0.03345,0.0017,5.7137
+fra.1,shots2,produccion,Paris FC,0.0053,0.012,8.4863
+fra.1,shots2,produccion,Lens,0.0287,0.0018,5.91465
+fra.1,shots2,produccion,Brest,0.00115,0.03105,10.041649999999999
+fra.1,shots2,produccion,Toulouse,0.00265,0.01975,9.4412
+fra.1,shots2,produccion,Lorient,0.0006,0.0609,11.25525
+fra.1,shots2,produccion,Nice,0.00035,0.0964,12.175500000000001
+fra.1,shots2,produccion,Strasbourg,0.00115,0.032600000000000004,9.98735
+fra.1,shots2,produccion,Angers,0.0,0.44715,15.51285
+fra.1,shots2,produccion,Marseille,0.00985,0.009,7.4099
+fra.1,shots2,produccion,Le Mans,0.0,0.2437,14.0629
+fra.1,shots2,produccion,AJ Auxerre,0.0,0.20015,13.6185
+fra.1,shots2,produccion,Troyes,0.0,0.5254,15.927799999999998
+fra.1,shots2,produccion,Le Havre AC,0.0,0.3159,14.575599999999998
+fra.1,shots2_2016,backtest,Paris Saint-Germain,0.71365,0.0,1.5342
+fra.1,shots2_2016,backtest,Lille,0.0601,0.0004,4.89155
+fra.1,shots2_2016,backtest,AS Monaco,0.08485,0.0005,4.59105
+fra.1,shots2_2016,backtest,Stade Rennais,0.0336,0.0014,6.094499999999999
+fra.1,shots2_2016,backtest,Lyon,0.0413,0.00155,5.81655
+fra.1,shots2_2016,backtest,Paris FC,0.008,0.011300000000000001,8.54
+fra.1,shots2_2016,backtest,Lens,0.03255,0.00115,5.923600000000001
+fra.1,shots2_2016,backtest,Brest,0.0021,0.0319,10.0992
+fra.1,shots2_2016,backtest,Toulouse,0.0036,0.0204,9.25995
+fra.1,shots2_2016,backtest,Lorient,0.00135,0.0601,11.2035
+fra.1,shots2_2016,backtest,Nice,0.00055,0.08675,11.90145
+fra.1,shots2_2016,backtest,Strasbourg,0.0021,0.0351,10.118549999999999
+fra.1,shots2_2016,backtest,Angers,0.0,0.43345,15.479849999999999
+fra.1,shots2_2016,backtest,Marseille,0.0157,0.006200000000000001,7.3404
+fra.1,shots2_2016,backtest,Le Mans,0.00035,0.24435,13.978950000000001
+fra.1,shots2_2016,backtest,AJ Auxerre,0.0002,0.2001,13.566149999999999
+fra.1,shots2_2016,backtest,Troyes,0.0,0.5395,15.958549999999999
+fra.1,shots2_2016,backtest,Le Havre AC,0.0,0.32585,14.702
+chi.1,dc,-,Colo Colo,0.965,0.0,1.0383499999999999
+chi.1,dc,-,Universidad de Chile,0.0175,0.0,2.4228500000000004
+chi.1,dc,-,Universidad Católica,0.0175,0.0,2.7598000000000003
+chi.1,dc,-,Everton CD,0.0,0.0,4.8327
+chi.1,dc,-,Palestino,0.0,0.0,5.3172999999999995
+chi.1,dc,-,Deportes Limache,0.0,0.0,7.2392
+chi.1,dc,-,Huachipato,0.0,0.0,7.62455
+chi.1,dc,-,Coquimbo Unido,0.0,0.0002,8.052500000000002
+chi.1,dc,-,Deportes Concepcion,0.0,0.00165,9.65115
+chi.1,dc,-,Ñublense,0.0,0.00325,9.2536
+chi.1,dc,-,La Serena,0.0,0.013349999999999999,11.0925
+chi.1,dc,-,Audax Italiano,0.0,0.01955,10.72485
+chi.1,dc,-,O'Higgins,0.0,0.06775,12.079049999999999
+chi.1,dc,-,Cobresal,0.0,0.2124,13.410599999999999
+chi.1,dc,-,Universidad de Concepción,0.0,0.7125999999999999,14.7387
+chi.1,dc,-,Unión La Calera,0.0,0.96925,15.762300000000002
+chi.1,shots2,produccion,Colo Colo,0.9763,0.0,1.02585
+chi.1,shots2,produccion,Universidad de Chile,0.01485,0.0,2.3662499999999995
+chi.1,shots2,produccion,Universidad Católica,0.00885,0.0,2.8442000000000003
+chi.1,shots2,produccion,Everton CD,0.0,0.0,4.787100000000001
+chi.1,shots2,produccion,Palestino,0.0,0.0,5.49255
+chi.1,shots2,produccion,Deportes Limache,0.0,0.0,7.0262
+chi.1,shots2,produccion,Huachipato,0.0,0.0,7.69225
+chi.1,shots2,produccion,Coquimbo Unido,0.0,0.0003,7.815799999999999
+chi.1,shots2,produccion,Deportes Concepcion,0.0,0.00115,9.6142
+chi.1,shots2,produccion,Ñublense,0.0,0.00325,9.47735
+chi.1,shots2,produccion,La Serena,0.0,0.010150000000000001,10.9362
+chi.1,shots2,produccion,Audax Italiano,0.0,0.02095,10.997699999999998
+chi.1,shots2,produccion,O'Higgins,0.0,0.0542,11.92995
+chi.1,shots2,produccion,Cobresal,0.0,0.2119,13.460349999999998
+chi.1,shots2,produccion,Universidad de Concepción,0.0,0.7303499999999999,14.7778
+chi.1,shots2,produccion,Unión La Calera,0.0,0.9677500000000001,15.75625
+chi.1,shots2_2016,backtest,Colo Colo,0.9704,0.0,1.03225
+chi.1,shots2_2016,backtest,Universidad de Chile,0.0183,0.0,2.3810499999999997
+chi.1,shots2_2016,backtest,Universidad Católica,0.0113,0.0,2.81925
+chi.1,shots2_2016,backtest,Everton CD,0.0,0.0,4.83675
+chi.1,shots2_2016,backtest,Palestino,0.0,0.0,5.4293499999999995
+chi.1,shots2_2016,backtest,Deportes Limache,0.0,0.0,7.07545
+chi.1,shots2_2016,backtest,Huachipato,0.0,0.0,7.71495
+chi.1,shots2_2016,backtest,Coquimbo Unido,0.0,0.0002,7.95415
+chi.1,shots2_2016,backtest,Deportes Concepcion,0.0,0.00105,9.539100000000001
+chi.1,shots2_2016,backtest,Ñublense,0.0,0.00315,9.35835
+chi.1,shots2_2016,backtest,La Serena,0.0,0.012,11.035350000000001
+chi.1,shots2_2016,backtest,Audax Italiano,0.0,0.019600000000000003,10.89295
+chi.1,shots2_2016,backtest,O'Higgins,0.0,0.06155,12.00295
+chi.1,shots2_2016,backtest,Cobresal,0.0,0.19985,13.38815
+chi.1,shots2_2016,backtest,Universidad de Concepción,0.0,0.73575,14.79605
+chi.1,shots2_2016,backtest,Unión La Calera,0.0,0.96685,15.743899999999998
+bra.1,dc,-,Palmeiras,0.5014,0.0,1.49975
+bra.1,dc,-,Flamengo,0.4985,0.0,1.5033
+bra.1,dc,-,Athletico-PR,5e-05,0.0,4.43445
+bra.1,dc,-,Fluminense,5e-05,0.0,4.1707
+bra.1,dc,-,Atlético-MG,0.0,0.0,5.9449000000000005
+bra.1,dc,-,Bahia,0.0,0.0,5.744
+bra.1,dc,-,Cruzeiro,0.0,0.0,5.4786
+bra.1,dc,-,Santos,0.0,0.0015,9.520249999999999
+bra.1,dc,-,Red Bull Bragantino,0.0,0.00275,9.65335
+bra.1,dc,-,São Paulo,0.0,0.008900000000000002,10.464550000000001
+bra.1,dc,-,Botafogo,0.0,0.016550000000000002,11.17845
+bra.1,dc,-,Coritiba,0.0,0.07835,13.0888
+bra.1,dc,-,Mirassol,0.0,0.1439,13.803500000000001
+bra.1,dc,-,Vitória,0.0,0.12539999999999998,13.472900000000001
+bra.1,dc,-,Vasco da Gama,0.0,0.1273,13.333000000000002
+bra.1,dc,-,Internacional,0.0,0.54415,16.1957
+bra.1,dc,-,Corinthians,0.0,0.34724999999999995,15.1883
+bra.1,dc,-,Grêmio,0.0,0.6186999999999999,16.53015
+bra.1,dc,-,Remo,0.0,0.9852500000000001,18.855449999999998
+bra.1,dc,-,Chapecoense,0.0,1.0,19.9399
+bra.1,shots2,backtest,Palmeiras,0.47215,0.0,1.52935
+bra.1,shots2,backtest,Flamengo,0.52785,0.0,1.4742
+bra.1,shots2,backtest,Athletico-PR,0.0,0.0,4.3631
+bra.1,shots2,backtest,Fluminense,0.0,0.0,4.13805
+bra.1,shots2,backtest,Atlético-MG,0.0,0.0,6.022749999999999
+bra.1,shots2,backtest,Bahia,0.0,0.0,5.8227
+bra.1,shots2,backtest,Cruzeiro,0.0,0.0,5.4648
+bra.1,shots2,backtest,Santos,0.0,0.0014500000000000001,9.467200000000002
+bra.1,shots2,backtest,Red Bull Bragantino,0.0,0.0025,9.5417
+bra.1,shots2,backtest,São Paulo,0.0,0.007850000000000001,10.54685
+bra.1,shots2,backtest,Botafogo,0.0,0.01625,11.20355
+bra.1,shots2,backtest,Coritiba,0.0,0.08175,13.35735
+bra.1,shots2,backtest,Mirassol,0.0,0.13245,13.733400000000001
+bra.1,shots2,backtest,Vitória,0.0,0.12850000000000003,13.58715
+bra.1,shots2,backtest,Vasco da Gama,0.0,0.0913,12.833050000000002
+bra.1,shots2,backtest,Internacional,0.0,0.54885,16.2319
+bra.1,shots2,backtest,Corinthians,0.0,0.34905,15.211899999999998
+bra.1,shots2,backtest,Grêmio,0.0,0.65555,16.7018
+bra.1,shots2,backtest,Remo,0.0,0.9844999999999999,18.81805
+bra.1,shots2,backtest,Chapecoense,0.0,1.0,19.951150000000002

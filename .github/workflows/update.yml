@@ -1,0 +1,39 @@
+# Actualización automática: trae resultados de ESPN y, si hubo partidos nuevos en las ligas núcleo,
+# re-simula, sube los datos a Supabase Storage y vuelve a publicar el sitio en Vercel.
+name: actualizar datos
+
+on:
+  schedule:
+    - cron: "17 */2 * * *"   # cada 2 horas (UTC); si no hay resultados nuevos termina en ~2 min
+  workflow_dispatch:
+    inputs:
+      force:
+        description: "Re-simular todo aunque no haya resultados nuevos"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read   # el flujo solo lee el repositorio; los datos van a Supabase
+
+concurrency:
+  group: actualizar-datos
+  cancel-in-progress: false
+
+jobs:
+  update:
+    runs-on: ubuntu-latest
+    timeout-minutes: 90
+    env:
+      SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+      SUPABASE_SECRET_KEY: ${{ secrets.SUPABASE_SECRET_KEY }}
+      VERCEL_DEPLOY_HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: pyproject.toml
+      - run: pip install -e .
+      - name: actualizar
+        run: python -m cadlag.cli run --remote ${{ inputs.force && '--force' || '' }}

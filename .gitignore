@@ -1,0 +1,19 @@
+__pycache__/
+*.egg-info/
+.venv/
+.pytest_cache/
+.DS_Store
+.sync/
+_to_delete/
+
+# generados en cada actualización (el estado vive en Supabase Storage)
+outputs/web/*
+!outputs/web/global.json
+outputs/backtest/*.parquet
+outputs/backtest/*.npy
+outputs/*.log
+site/public/data/
+outputs/backtest/*.log
+
+# datos de terceros sin licencia de redistribución (se descargan al usarlos)
+data/raw/transfermarkt/

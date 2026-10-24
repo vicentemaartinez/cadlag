@@ -1,0 +1,164 @@
+{
+ "eng.1": {
+  "kind": "shots2",
+  "partidos": {
+   "delta_logp": 0.0093,
+   "se": 0.00233,
+   "z": 4.0,
+   "rps_dc": 0.19994,
+   "rps_shots2": 0.1982,
+   "n": 3865,
+   "desde": 2016
+  },
+  "temporadas": {
+   "delta_log_pos": 0.01652,
+   "se": 0.00936,
+   "z": 1.76,
+   "n_temporadas": 10
+  }
+ },
+ "esp.1": {
+  "kind": "shots2",
+  "partidos": {
+   "delta_logp": 0.00037,
+   "se": 0.00154,
+   "z": 0.24,
+   "rps_dc": 0.19615,
+   "rps_shots2": 0.1965,
+   "n": 3878,
+   "desde": 2016
+  },
+  "temporadas": {
+   "delta_log_pos": -0.00113,
+   "se": 0.00894,
+   "z": -0.13,
+   "n_temporadas": 9
+  }
+ },
+ "ita.1": {
+  "kind": "shots2",
+  "partidos": {
+   "delta_logp": 0.00163,
+   "se": 0.00226,
+   "z": 0.72,
+   "rps_dc": 0.19399,
+   "rps_shots2": 0.19386,
+   "n": 3865,
+   "desde": 2016
+  },
+  "temporadas": {
+   "delta_log_pos": -0.0086,
+   "se": 0.00898,
+   "z": -0.96,
+   "n_temporadas": 10
+  }
+ },
+ "ger.1": {
+  "kind": "shots2",
+  "partidos": {
+   "delta_logp": -0.00175,
+   "se": 0.00243,
+   "z": -0.72,
+   "rps_dc": 0.20411,
+   "rps_shots2": 0.20355,
+   "n": 3112,
+   "desde": 2016
+  },
+  "temporadas": {
+   "delta_log_pos": 0.00101,
+   "se": 0.00998,
+   "z": 0.1,
+   "n_temporadas": 10
+  }
+ },
+ "fra.1": {
+  "kind": "shots2",
+  "partidos": {
+   "delta_logp": 0.00518,
+   "se": 0.00237,
+   "z": 2.18,
+   "rps_dc": 0.20539,
+   "rps_shots2": 0.20483,
+   "n": 3543,
+   "desde": 2016
+  },
+  "temporadas": {
+   "delta_log_pos": 0.00336,
+   "se": 0.01081,
+   "z": 0.31,
+   "n_temporadas": 10
+  }
+ },
+ "eng.2": {
+  "kind": "shots2",
+  "partidos": {
+   "delta_logp": 0.00752,
+   "se": 0.00152,
+   "z": 4.94,
+   "rps_dc": 0.2205,
+   "rps_shots2": 0.21849,
+   "n": 5689,
+   "desde": 2016
+  },
+  "temporadas": {
+   "delta_log_pos": 0.02457,
+   "se": 0.01355,
+   "z": 1.81,
+   "n_temporadas": 10
+  }
+ },
+ "chi.1": {
+  "kind": "shots2",
+  "partidos": {
+   "delta_logp": 0.00423,
+   "se": 0.00174,
+   "z": 2.43,
+   "rps_dc": 0.22315,
+   "rps_shots2": 0.22195,
+   "n": 1730,
+   "desde": 2020
+  },
+  "temporadas": {
+   "delta_log_pos": 0.01321,
+   "se": 0.00733,
+   "z": 1.8,
+   "n_temporadas": 6
+  }
+ },
+ "bra.1": {
+  "kind": "shots2",
+  "partidos": {
+   "delta_logp": 0.00248,
+   "se": 0.00145,
+   "z": 1.71,
+   "rps_dc": 0.20726,
+   "rps_shots2": 0.20709,
+   "n": 4101,
+   "desde": 2016
+  },
+  "temporadas": {
+   "delta_log_pos": 0.01184,
+   "se": 0.00891,
+   "z": 1.33,
+   "n_temporadas": 9
+  }
+ },
+ "arg.1": {
+  "kind": "shots2",
+  "partidos": {
+   "delta_logp": 0.00353,
+   "se": 0.00186,
+   "z": 1.89,
+   "rps_dc": 0.21428,
+   "rps_shots2": 0.2143,
+   "n": 4218,
+   "desde": 2016
+  },
+  "temporadas": {
+   "delta_log_pos": 0.00833,
+   "se": 0.00896,
+   "z": 0.93,
+   "n_temporadas": 10
+  }
+ }
+}

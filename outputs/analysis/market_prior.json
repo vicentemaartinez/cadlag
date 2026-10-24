@@ -1,0 +1,49 @@
+{
+ "gamma": 0.04185000336936397,
+ "gamma_se": 0.012259390212050147,
+ "gamma_promoted": 0.11016376538899128,
+ "n_train": 590,
+ "n_test": 981,
+ "corr_out": -0.037024935897360126,
+ "r2_out": -0.02765660306567952,
+ "share_with_transfers": 0.9637173774665818,
+ "seasons": {
+  "log_pos": {
+   "base": 2.517629801336257,
+   "mercado": 2.5217211963916886,
+   "mercado_ascendidos": 2.517913928402731
+  },
+  "log_pos_prom": {
+   "base": 2.612457451285842,
+   "mercado": 2.6161158009438084,
+   "mercado_ascendidos": 2.61295843169101
+  },
+  "rps_pos": {
+   "base": 0.10866161257920537,
+   "mercado": 0.10900802938867389,
+   "mercado_ascendidos": 0.10874039616511869
+  },
+  "mae_pts": {
+   "base": 8.386740027777778,
+   "mercado": 8.427816250000001,
+   "mercado_ascendidos": 8.406338916666666
+  },
+  "z2": {
+   "base": 1.3082485360193854,
+   "mercado": 1.316411936042439,
+   "mercado_ascendidos": 1.3066072884939623
+  },
+  "cover90": {
+   "base": 0.8504444444444446,
+   "mercado": 0.8466666666666667,
+   "mercado_ascendidos": 0.8536666666666668
+  }
+ },
+ "delta_log_pos": 0.004091395055431946,
+ "delta_log_pos_se": 0.003987760972471464,
+ "wins": 19,
+ "n_seasons": 50,
+ "delta_log_pos_ascendidos": 0.000284127066474591,
+ "delta_log_pos_ascendidos_se": 0.004844801387049836,
+ "wins_ascendidos": 19
+}

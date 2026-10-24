@@ -1,0 +1,24 @@
+{
+  "name": "cadlag",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "data": "node scripts/fetch-data.mjs",
+    "dev": "next dev",
+    "build": "node scripts/fetch-data.mjs && next build",
+    "start": "npx serve out",
+    "lint": "tsc --noEmit"
+  },
+  "dependencies": {
+    "next": "15.5.27",
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/react": "^19.1.0",
+    "@types/react-dom": "^19.1.0",
+    "typescript": "^5.8.0"
+  }
+}

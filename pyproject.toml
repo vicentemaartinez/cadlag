@@ -1,0 +1,33 @@
+[project]
+name = "cadlag"
+version = "0.1.0"
+description = "Modelo bayesiano dinámico de goles y simulación de temporadas para predecir posiciones finales en ligas de fútbol."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "numpy>=1.26",
+    "scipy>=1.11",
+    "pandas>=2.1",
+    "pyarrow>=14",
+    "jax>=0.4.30",
+    "numba>=0.59",
+    "requests>=2.31",
+]
+
+[project.optional-dependencies]
+bayes = ["numpyro>=0.15", "arviz>=0.18"]
+plots = ["matplotlib>=3.8"]
+dev = ["pytest>=8"]
+
+[project.scripts]
+cadlag = "cadlag.cli:main"
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
