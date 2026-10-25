@@ -38,6 +38,14 @@ Configuración (una vez):
   `src/cadlag/leagues.py` (`POINT_ADJUSTMENTS`). Cuando la EFL anuncie uno nuevo, se agrega ahí.
 - Promedios de Argentina: los puntos y partidos de las dos temporadas anteriores van en
   `PROMEDIO_BASE` (mismo archivo); para 2026 vienen de la tabla oficial; desde 2027 se calculan solos con los datos.
+- Copas del año siguiente en Argentina: `CUP_SPOTS` (mismo archivo) lleva los ya clasificados a la
+  Libertadores por un título. Cuando se juegue la final de la Copa Argentina (4 de noviembre de 2026)
+  hay que agregar al campeón en `fixed`; para 2027 se agrega una entrada nueva con el campeón del
+  Apertura.
+- Resultados que ESPN no cierra: si un partido ya jugado sigue "programado", la actualización
+  vuelve a pedir ese día durante 30 días. Si ESPN nunca lo corrige, se carga en
+  `data/manual/results.csv` (competición, fecha, local, visita, goles); solo se usa mientras ESPN no lo
+  dé por terminado.
 - Champions League (`src/cadlag/sim/ucl.py`), tres datos a mano:
   - `MISSING_FIXTURES`: partidos de la fase liga que ESPN no trae (en 2026-27 faltaban cinco). Se
     agregan con fecha y nombres; si después aparecen en los datos, se ignoran solos.
@@ -45,6 +53,11 @@ Configuración (una vez):
     5.º y el 7.º de la fase liga (0 = la del 1.º, 1 = la del 2.º). Sin el dato se sortea en cada
     simulación hasta que los cuartos aparecen en los datos.
   - `FINAL_HOST`: el club dueño del estadio de la final, si juega la Champions (2027: Atlético).
+- Ligas que solo alimentan la capa europea (`EUROPE_EXTRA` en `leagues.py`: Portugal, Países Bajos,
+  Turquía, Bélgica, Grecia, Austria, Noruega, Escocia, Dinamarca, Suiza, Suecia): la actualización
+  las trae de ESPN igual que las demás, pero no se pronostican. Para sumar una liga nueva: agregar su
+  código a `EUROPE_EXTRA`, correr una vez el flujo "traer historial de ligas nuevas"
+  (`.github/workflows/backfill.yml`) con ese código y luego `python scripts/fit_extra_leagues.py <liga>`.
 - Capa europea: los hiperparámetros están en `models/europe_h.npy`. Se reajustan con
   `python scripts/europe_fit.py` (unos 10 minutos); no hace falta hacerlo cada temporada.
 

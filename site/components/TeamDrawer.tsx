@@ -49,9 +49,22 @@ export default function TeamDrawer({ D, t, M, ex, onClose }: { D: League; t: num
           if (c.length) left = c[c.length - 1][0];   // en Argentina, título y playoffs cuentan solo el torneo en curso
           const n50 = nd[need]?.points_for_50 ?? null, n90 = nd[need]?.points_for_90 ?? null;
           const goal = need === "top8" ? "termina entre los 8 primeros" : need === "top24" ? "sigue en carrera (top 24)" : need === "champion" ? "gana la copa" : need === "title" ? "sale campeón" : need === "promotion" ? "asciende" : need === "playoffs" ? "clasifica a los playoffs" : "se salva";
+          // objetivos que se definen en una llave (campeón del torneo argentino o de una copa): ni ganando
+          // todo se llega al 50 %, así que la curva se lee contra su propio máximo
+          const ko = (split && need === "title") || need === "champion";
+          const pmaxC = c.length ? Math.max(...c.map((r) => r[1])) : 0;
+          const now = ko ? (need === "title" ? ex.title?.[t!] : ex.champion?.[t!]) ?? 0 : 0;
+          const half = ko ? c.find((r) => r[1] >= 0.5 * pmaxC)?.[0] ?? null : null;
           const sentence = () => {
             if (!c.length) return null;
-            if (n50 == null) return `Aunque gane todo lo que le queda, ${goal} en menos de la mitad de las simulaciones.${need === "champion" ? " La fase liga solo ordena el cuadro: el título se juega en las llaves." : ""}`;
+            if (ko) {
+              if (pmaxC < 0.0005) return "Ya no llega a la llave del título, ni ganando todo lo que le queda.";
+              const where = cup ? "la copa" : `el ${split?.tournament ?? "torneo"}`;
+              const first = `Ganando los ${left} puntos que le quedan, gana ${where} en el ${fmt(pmaxC * 100, 1)} % de las simulaciones (hoy, ${fmt(now * 100, 1)} %).`;
+              const second = half != null && half > 0 ? ` Con ${half} puntos ya tiene la mitad de esa chance.` : "";
+              return first + second + " La fase regular decide si entra a la llave, el cruce y la localía; el título se juega en las eliminatorias.";
+            }
+            if (n50 == null) return `Aunque gane todo lo que le queda, ${goal} en menos de la mitad de las simulaciones.`;
             const first = n50 === 0 ? `Sin sumar más puntos ya ${goal} en la mitad de las simulaciones` : `Si suma ${n50} de los ${left} puntos que le quedan, ${goal} en la mitad de las simulaciones`;
             const second = n90 == null ? "." : n90 === n50 ? ", y en nueve de cada diez." : `; con ${n90}, en nueve de cada diez.`;
             return first + second;
@@ -59,16 +72,18 @@ export default function TeamDrawer({ D, t, M, ex, onClose }: { D: League; t: num
           let chart: React.ReactNode = null;
           if (c.length) {
             const W = 440, H = 160, pad = [14, 10, 22, 42]; const xs = c.map((r) => r[0]); const x0 = Math.min(...xs), x1 = Math.max(...xs);
-            const X = (v: number) => pad[3] + ((v - x0) / Math.max(1, x1 - x0)) * (W - pad[1] - pad[3]), Y = (v: number) => pad[0] + (1 - v) * (H - pad[0] - pad[2]);
+            // en los objetivos de llave el eje llega al máximo de la curva (redondeado a 5 puntos porcentuales)
+            const top = ko ? Math.max(0.05, Math.ceil((pmaxC * 1.05) * 20) / 20) : 1;
+            const X = (v: number) => pad[3] + ((v - x0) / Math.max(1, x1 - x0)) * (W - pad[1] - pad[3]), Y = (v: number) => pad[0] + (1 - v / top) * (H - pad[0] - pad[2]);
             const line = c.map((r, i) => `${i ? "L" : "M"}${X(r[0]).toFixed(1)},${Y(r[1]).toFixed(1)}`).join("");
             const at = (v: number | null) => (v == null ? null : c.find((r) => r[0] >= v) ?? null);
             const xt = [x0, Math.round((x0 + x1) / 2), x1];
             chart = (
               <svg viewBox={`0 0 ${W} ${H}`} width="100%" role="img" aria-label="Probabilidad de lograr el objetivo según los puntos que sume" style={{ fontFamily: "var(--f-sans)" }}>
-                {[0, 0.5, 1].map((v) => <g key={v}><line x1={pad[3]} x2={W - pad[1]} y1={Y(v)} y2={Y(v)} stroke="var(--rule)" /><text x={pad[3] - 6} y={Y(v) + 3} textAnchor="end" fontSize="10.5" style={{ fill: "var(--ink-2)" }}>{v * 100} %</text></g>)}
+                {[0, top / 2, top].map((v) => <g key={v}><line x1={pad[3]} x2={W - pad[1]} y1={Y(v)} y2={Y(v)} stroke="var(--rule)" /><text x={pad[3] - 6} y={Y(v) + 3} textAnchor="end" fontSize="10.5" style={{ fill: "var(--ink-2)" }}>{fmt(v * 100, v * 100 % 1 ? 1 : 0)} %</text></g>)}
                 {xt.map((v) => <text key={v} x={X(v)} y={H - 6} textAnchor="middle" fontSize="10.5" style={{ fill: "var(--ink-2)" }}>+{v}</text>)}
                 <path d={line} fill="none" stroke="var(--beni)" strokeWidth="2" />
-                {[at(n50), at(n90)].map((r, i) => r && <circle key={i} cx={X(r[0])} cy={Y(r[1])} r="4" fill={i ? "var(--beni)" : "var(--paper)"} stroke="var(--beni)" strokeWidth="1.6" />)}
+                {(ko ? [at(half)] : [at(n50), at(n90)]).map((r, i) => r && <circle key={i} cx={X(r[0])} cy={Y(r[1])} r="4" fill={i ? "var(--beni)" : "var(--paper)"} stroke="var(--beni)" strokeWidth="1.6" />)}
               </svg>
             );
           }
@@ -100,7 +115,7 @@ export default function TeamDrawer({ D, t, M, ex, onClose }: { D: League; t: num
                 {iv("Ataque", R.attack, R.attack_sd)}{iv("Defensa", R.defense, R.defense_sd)}
                 <p className="note" style={{ marginTop: 10 }}>
                   {cup
-                    ? <>Contra un rival promedio de la Premier en cancha neutral: {fmt(R.xgf_neutral, 2)} goles a favor y {fmt(R.xga_neutral, 2)} en contra. {R.league ? `Su fuerza sale de la ${LNAME[R.league] ?? R.league} más el nivel de esa liga en Europa.` : "Su liga no está modelada: la fuerza sale solo de sus partidos europeos."}</>
+                    ? <>Contra un rival promedio de la Premier en cancha neutral: {fmt(R.xgf_neutral, 2)} goles a favor y {fmt(R.xga_neutral, 2)} en contra. {R.league ? `Su fuerza sale de la ${LNAME[R.league] ?? R.league} más el nivel de esa liga en Europa.` : `Su liga no está modelada: la fuerza sale solo de sus partidos europeos (${R.n_uefa ?? 0} en las últimas tres temporadas)${T.few_data ? ", así que es muy incierta" : ""}.`}</>
                     : R.sot_for != null
                     ? <>Contra un rival promedio en cancha neutral: {fmt(R.sot_for, 1)} tiros al arco con {fmt((R.conv_for ?? 0) * 100, 0)} % de conversión, {fmt(R.xgf_neutral, 2)} goles a favor; recibe {fmt(R.sot_against ?? 0, 1)} tiros al arco y le convierten el {fmt((R.conv_against ?? 0) * 100, 0)} %, {fmt(R.xga_neutral, 2)} en contra.</>
                     : <>Contra un rival promedio en cancha neutral: {fmt(R.xgf_neutral, 2)} goles a favor y {fmt(R.xga_neutral, 2)} en contra.</>}

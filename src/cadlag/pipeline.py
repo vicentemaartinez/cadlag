@@ -172,6 +172,9 @@ def forecast_league(comp: str, matches=None, teams=None, n_sims=20000, refit=Fal
             zones["title"] = float(X["title"][:, i].mean())
             zones["playoffs"] = float((X["zpos"][:, i] < 8).mean())
             zones["relegated"] = float(X["rel"][:, i].mean())
+            if "lib" in X:
+                zones["libertadores"] = float(X["lib"][:, i].mean())
+                zones["sudamericana"] = float(X["sud"][:, i].mean())
         if res.promoted is not None:   # ascenso total: directo + playoffs
             zones["promoted"] = float(res.promoted[:, i].mean())
             zones["playoff_win"] = float((res.po_winner == i).mean())

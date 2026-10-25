@@ -158,6 +158,16 @@ LEAGUES: dict[str, League] = {
 # fase regular de todos los torneos (2024: Copa de la Liga + Liga Profesional, 41 partidos; 2025:
 # Apertura + Clausura, 32). ESPN no trae la Copa de la Liga 2024, así que se carga desde la tabla
 # oficial de promedios (verificada contra los partidos de 2026: mismos puntos y partidos).
+# Copas del año siguiente por la temporada argentina (desde 2026, cambio aprobado por la LPF en marzo
+# de 2026): a la Libertadores van los campeones del Apertura, del Clausura y de la Copa Argentina, y
+# por la tabla anual —sin contar a los ya clasificados— el 1.º y el 2.º (fase de grupos) y el 9.º
+# (fase 2); a la Sudamericana, del 3.º al 8.º. ``fixed`` son los clasificados ya conocidos (nombres
+# de ESPN): el campeón del torneo ya jugado y, cuando se defina, el de la Copa Argentina (final el 4
+# de noviembre de 2026). El campeón del torneo en curso sale de cada simulación.
+CUP_SPOTS: dict[tuple[str, int], dict] = {
+    ("arg.1", 2026): dict(fixed=["Belgrano (Córdoba)"], lib=(0, 1, 8), sud=(2, 3, 4, 5, 6, 7)),
+}
+
 PROMEDIO_BASE: dict[tuple[str, int], dict[str, tuple[int, int]]] = {
     ("arg.1", 2026): {
         "Boca Juniors": (129, 73), "River Plate": (123, 73), "Vélez Sarsfield": (116, 73),
@@ -204,6 +214,10 @@ def point_adjustments(comp: str, syear: int, asof=None) -> dict[str, int]:
 
 # Ligas que el proyecto modela hoy (las demás están descargadas para el grafo entre ligas).
 CORE_LEAGUES = ["eng.1", "esp.1", "ita.1", "ger.1", "fra.1", "eng.2", "chi.1", "bra.1", "arg.1"]
+# Ligas que solo alimentan la capa europea de las copas (model.europe): se actualizan y se filtran,
+# pero no se pronostican ni se muestran. ESPN no tiene (con ese código) Chequia, Ucrania, Eslovaquia,
+# Azerbaiyán, Croacia, Serbia, Polonia, Hungría ni Bulgaria.
+EUROPE_EXTRA = ["por.1", "ned.1", "tur.1", "bel.1", "gre.1", "aut.1", "nor.1", "sco.1", "den.1", "sui.1", "swe.1"]
 CUP_COMPETITIONS = ["uefa.champions", "uefa.europa", "uefa.europa.conf",
                     "conmebol.libertadores", "conmebol.sudamericana", "fifa.cwc"]
 

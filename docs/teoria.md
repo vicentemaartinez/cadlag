@@ -429,6 +429,14 @@ el orden de una zona, el campeón se reemplaza por $P(\text{campeón}\mid\text{e
 zona})$, estimada con todas las temporadas simuladas, y el descenso se recalcula exacto con los
 promedios.
 
+**Copas del año siguiente.** Desde 2026 (cambio de la LPF de marzo de 2026), van a la Libertadores
+los campeones del Apertura, del Clausura y de la Copa Argentina y, por la tabla anual sin contar a
+los ya clasificados, el 1.º y el 2.º (fase de grupos) y el 9.º (fase 2); a la Sudamericana, del 3.º
+al 8.º. En cada simulación se recorre la tabla anual saltando al campeón ya conocido y al campeón
+simulado del torneo en curso. La Copa Argentina no se simula: su campeón se agrega a mano cuando se
+conoce; mientras tanto, si termina siendo un equipo que entraba por la tabla, el corrimiento que
+eso produce no está en el pronóstico.
+
 ## 25. "¿Qué necesita?": la curva de puntos completa
 
 La ficha de cada equipo muestra $p(g)=P(\text{objetivo}\mid\text{suma }g\text{ puntos desde hoy})$ y
@@ -461,14 +469,23 @@ los del título difieren con razón, porque dependen de a quién hay que superar
 70, a los demás 82-83). Los escalones que quedan en la curva del título son reales: los rivales
 suman de a 3 y de a 1.
 
+Cuando el objetivo se define en una llave (ganar el torneo argentino o una copa), la fase regular
+solo decide si se entra al cuadro, el cruce y la localía: ni ganando todo se llega al 50 %, y la
+lectura "con $g$ puntos lo logra en la mitad de las simulaciones" no tiene sentido. Para esos
+objetivos la ficha muestra la curva con su propia escala, el máximo $p(g_{\max})$ frente a la
+probabilidad de hoy, y el primer $g$ con $p(g)\ge p(g_{\max})/2$.
+
 # Extensiones de la cuarta etapa: copas
 
 ## 26. Champions League: una escala común para toda Europa
 
-En una copa se enfrentan equipos de ligas distintas, y 15 de los 36 de la Champions 2026-27 juegan
-en ligas que no modelamos (Portugal, Países Bajos, Turquía, Bélgica, Grecia, Chequia, Austria,
-Noruega, Ucrania, Eslovaquia, Azerbaiyán). Hace falta una fuerza de cada equipo en una **escala
-común**, con su incertidumbre.
+En una copa se enfrentan equipos de ligas distintas: 15 de los 36 de la Champions 2026-27 juegan
+fuera de las cinco grandes ligas. Hace falta una fuerza de cada equipo en una **escala común**, con
+su incertidumbre. Además de las cinco grandes, la capa usa el modelo oficial de once ligas que solo
+la alimentan a ella (Portugal, Países Bajos, Turquía, Bélgica, Grecia, Austria, Noruega, Escocia,
+Dinamarca, Suiza y Suecia, traídas de ESPN desde 2010; sus hiperparámetros se ajustan con 2012-2015
+partiendo de los de Portugal). Con eso, 32 de los 36 tienen liga; Slavia, Shakhtar, Slovan y Sabah
+(Chequia, Ucrania, Eslovaquia y Azerbaiyán no están en ESPN) se estiman solo con partidos europeos.
 
 **Capa europea.** Cada partido UEFA (Champions, Europa League, Conference y, hasta 2019, sus
 previas; 9.700 desde 2010) entre $i$ (local) y $j$ observa
@@ -479,7 +496,8 @@ donde la fuerza doméstica sale del modelo oficial linealizado en goles: como
 $\log E[\text{goles}]=c+a_i-b_j+\log\sigma(\phi+f_i-g_j)\approx\text{cte}+a_i-b_j+\kappa(f_i-g_j)$ con
 $\kappa=1-\sigma(\phi)$, es $\text{att}^{\text{dom}}=a+\kappa f$ y $\text{def}^{\text{dom}}=b+\kappa g$, con la media y la
 covarianza del filtro doméstico en la fecha del partido. $(A_\ell,D_\ell)$ son los offsets de la liga
-(la Premier es la referencia) y $(u_i,v_i)\sim N(0,v_u)$ un **residuo europeo**: lo que el equipo
+(la Premier es la referencia; los de las ligas fuera de las cinco grandes tienen su propio prior,
+centrado más abajo) y $(u_i,v_i)\sim N(0,v_u)$ un **residuo europeo**: lo que el equipo
 rinde en Europa por encima o por debajo de lo que dice su liga (rota en la liga, juega distinto en
 eliminatorias); revierte a 0 entre temporadas. Para un equipo sin liga modelada, $(\text{att}_i,\text{def}_i)$
 es un estado propio con prior $N(\beta_c,v_0)$ al aparecer, según la copa que juega
@@ -547,8 +565,7 @@ y la geometría del grafo entre ligas (R6), que es el aporte más original.
 Los pendientes 1 a 4 de la primera etapa están implementados (§17-20, resultados R12-R15); el
 modelo de dos latentes es el oficial en todas las ligas (§21, R16) y el laboratorio del sitio
 condiciona por reponderación (§22). La Championship (§23, R17-R18), Argentina (§24, R19) y la Champions League (§26, R20) están
-implementadas. Quedan: las otras copas (Libertadores, Europa League) y, para la Champions, las ligas
-domésticas de los equipos que hoy se estiman solo con partidos europeos.
+implementadas. Quedan: las otras copas (Libertadores, Europa League).
 
 ## Resultados de la segunda etapa
 
@@ -562,7 +579,7 @@ domésticas de los equipos que hoy se estiman solo con partidos europeos.
 | R17 | ¿Funciona en una liga con ascenso por playoffs (Championship)? | Sí. Partidos, desde 2016-17 (5.689): dos latentes +0,0075 ± 0,0015 nats frente al núcleo (z = 4,9); en los 5.552 con cuotas, RPS 0,2183 frente a 0,2203 del núcleo y 0,2142 de Bet365. Temporadas (10, formato de cuatro equipos en playoffs): posición final +0,025 ± 0,014; ascenso (−log P de subir o no, con el ascenso real leído de la Premier del año siguiente) +0,0095 ± 0,0052 por equipo y momento. El ascenso está calibrado: la suma de probabilidades da 3,0 ascensos por temporada en cada momento, y por tramos el pronóstico y la frecuencia coinciden (0,09 frente a 0,07; 0,22 frente a 0,21; 0,37 frente a 0,43; 0,60 frente a 0,67; 0,87 frente a 0,89). Brier del ascenso en pretemporada 0,094 (núcleo 0,100) | `backtest.py eng.2 2016`, `shots2_analysis.py`, `season_compare.py`, `shots2_vs_market.py` |
 | R18 | ¿Sirve el prior propio para los descendidos (§23)? | Sí. Frente al mismo modelo sin él: +0,0019 ± 0,0005 nats por partido (z = 3,6), +0,0038 ± 0,0012 en los partidos de equipos recién llegados; en el ascenso +0,0046 ± 0,0023, casi todo en pretemporada (Brier 0,094 frente a 0,099). El ajuste fuera de muestra separa las dos poblaciones en el bloque de tiros: descendidos $a=+0,10$, $b=+0,13$; ascendidos $a=0,00$, $b=-0,05$ | `shots2_norel_fit.py`, `season_compare.py` |
 | R19 | ¿Y en Argentina (zonas, playoffs, promedios)? | Partidos desde 2016 (4.218): dos latentes +0,0035 ± 0,0019 frente al núcleo (z = 1,9, sin evidencia de que pierda, así que queda el oficial); en los 1.944 con cuotas, RPS 0,2134 frente a 0,2140 del núcleo y 0,2071 de Bet365. Temporadas (10, tabla de cada año): +0,008 ± 0,009. Torneos con el formato actual (Apertura y Clausura 2025, Apertura 2026), fuera de muestra: la clasificación a octavos se pronostica bien (Brier 0,12 promediando momentos, frente a 0,25 de repartir 16 de 30 al azar; 0,118 el oficial y 0,120 el núcleo), pero los tres campeones fueron sorpresas: Platense, Estudiantes y Belgrano tenían entre 1,4 y 6,3 % en todos los momentos, con favoritos de 11-23 %. Una llave de 16 a partido único con alargue y penales reparte mucho; tres torneos no alcanzan para evaluar la calibración del campeón | `backtest.py arg.1 2016`, `shots2_analysis.py`, `season_compare.py`, `tournament_backtest.py` |
-| R20 | ¿Sirve anclar los equipos europeos a su liga para pronosticar la Champions (§26)? | **Sí.** Partidos UEFA de 2018-19 a 2026-27 (4.046, hiperparámetros ajustados con 2011-2017): la capa con fuerzas domésticas gana **+0,018 ± 0,003** nats por partido (z = 5,6) a la misma capa solo con partidos de copa; la ganancia está en los partidos entre un equipo de las cinco grandes ligas y uno de otra (Europa League +0,061 ± 0,012). El residuo europeo agrega +0,0016 ± 0,0007. Torneos (ocho ediciones, 2018-19 a 2025-26, en ocho o nueve momentos de cada una): log score de la etapa alcanzada **−0,020 ± 0,008** por equipo a favor (siete de ocho ediciones); el del campeón, −0,11 ± 0,18 (dos de las ocho las ganó el PSG, que al empezar tenía 1,9 % y 5,6 % con la capa y 4,7 % y 10,7 % solo con copas: la Ligue 1 pesa en su contra). Offsets netos frente a la Premier en 2026: LaLiga −0,30, Bundesliga −0,32, Serie A −0,39, Ligue 1 −0,51. Probado y descartado: una media propia para los equipos presentes al empezar los datos y una media común de reversión (mejor dentro de muestra, peor fuera: 2,989 frente a 2,974) | `europe_fit.py`, `ucl_backtest.py` |
+| R20 | ¿Sirve anclar los equipos europeos a su liga para pronosticar la Champions (§26)? | **Sí.** Partidos UEFA de 2018-19 a 2026-27 (4.100, hiperparámetros ajustados con 2011-2017): la capa anclada a las 16 ligas con modelo doméstico gana **+0,030 ± 0,004** nats por partido (z = 7,2) a la misma capa solo con partidos de copa, y **+0,013 ± 0,003** (z = 4,4) a la anclada solo a las cinco grandes; la ganancia de las ligas nuevas está en los partidos de sus equipos (+0,024 ± 0,005 en 2.093; en el resto, +0,002 ± 0,002). Frente a solo copas, anclar a las cinco grandes ya ganaba +0,018 ± 0,003, sobre todo en los cruces entre un equipo de esas ligas y uno de otra (Europa League +0,061 ± 0,012). El residuo europeo agrega +0,0016 ± 0,0007. Torneos (ocho ediciones, 2018-19 a 2025-26, ocho o nueve momentos cada una): con las cinco grandes, el log score de la etapa alcanzada mejora **−0,020 ± 0,008** por equipo frente a solo copas (siete de ocho ediciones) y el del campeón −0,11 ± 0,18 (ruido: dos de las ocho las ganó el PSG, con 1,9 % y 5,6 % al empezar, 4,7 % y 10,7 % solo con copas); pasar de 5 a 16 ligas es neutro a ese nivel (+0,003 ± 0,005): el campeón y las rondas finales los deciden los equipos de las cinco grandes, que no cambian. Offsets netos frente a la Premier en 2026: LaLiga −0,27, Bundesliga −0,31, Serie A −0,37, Ligue 1 −0,50; Portugal −0,92, Bélgica −0,95, Países Bajos −0,99, Turquía −1,03, Dinamarca −1,11, Suiza −1,16, Noruega −1,22, Grecia −1,22, Austria −1,27, Suecia −1,33, Escocia −1,44. Probado y descartado: una media propia para los equipos presentes al empezar los datos y una media común de reversión (mejor dentro de muestra, peor fuera: 2,989 frente a 2,974) | `fit_extra_leagues.py`, `europe_fit.py`, `ucl_backtest.py` |
 
 ## Lectura de la segunda etapa
 

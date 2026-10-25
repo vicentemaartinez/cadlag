@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import argparse
 
-from .leagues import CORE_LEAGUES, CUP_COMPETITIONS
+from .leagues import CORE_LEAGUES, CUP_COMPETITIONS, EUROPE_EXTRA
 
 
 def main(argv=None):
@@ -45,7 +45,7 @@ def main(argv=None):
         print(f"{len(m)} partidos, {len(t)} equipos")
     elif a.cmd == "update":
         from .data import store
-        ch = store.update(a.comps or (CORE_LEAGUES + CUP_COMPETITIONS), days_back=a.days_back, months=a.months)
+        ch = store.update(a.comps or (CORE_LEAGUES + CUP_COMPETITIONS + EUROPE_EXTRA), days_back=a.days_back, months=a.months)
         print(f"{len(ch)} partidos nuevos o actualizados")
     elif a.cmd == "run":
         run(comps, a)
@@ -84,7 +84,8 @@ def run(comps, a):
         remote.pull_state()
     changed_comps: set[str] = set()
     if not a.no_update:
-        ch = store.update(comps + CUP_COMPETITIONS, days_back=a.days_back, months=a.months)
+        # las ligas de EUROPE_EXTRA solo alimentan la capa europea de las copas: se actualizan, no se pronostican
+        ch = store.update(comps + CUP_COMPETITIONS + EUROPE_EXTRA, days_back=a.days_back, months=a.months)
         changed_comps = set(ch["comp"]) & (set(comps) | set(a.cups)) if len(ch) else set()
         print(f"{len(ch)} partidos nuevos o actualizados; ligas y copas afectadas: {sorted(changed_comps) or 'ninguna'}", flush=True)
         if a.remote and len(ch):

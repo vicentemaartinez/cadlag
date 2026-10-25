@@ -15,6 +15,10 @@ export const COUNTRY: Record<string, string> = {
 export const LNAME: Record<string, string> = {
   ...NAMES, "chi.1": "Chile", "arg.1": "Argentina", "esp.2": "LaLiga 2", "ita.2": "Serie B",
   "ger.2": "2. Bundesliga", "fra.2": "Ligue 2", "bra.2": "Série B",
+  // ligas que solo alimentan la capa europea de las copas
+  "por.1": "Primeira Liga", "ned.1": "Eredivisie", "tur.1": "Süper Lig", "bel.1": "Pro League belga",
+  "gre.1": "Superliga griega", "aut.1": "Bundesliga austriaca", "nor.1": "Eliteserien", "sco.1": "Premiership escocesa",
+  "den.1": "Superliga danesa", "sui.1": "Super League suiza", "swe.1": "Allsvenskan",
 };
 export const EUROPE = ["eng.1", "esp.1", "ita.1", "ger.1", "fra.1", "eng.2"];
 export const SOUTH = ["chi.1", "bra.1", "arg.1"];

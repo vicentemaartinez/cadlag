@@ -82,6 +82,8 @@ python scripts/market_prior_analysis.py        # mercado de pases en la pretempo
 python scripts/transfer_edges_analysis.py      # traspasos como aristas entre ligas
 python scripts/tournament_backtest.py          # Argentina: campeones y playoffs de cada torneo
 python scripts/shots2_norel_fit.py eng.2:2016  # Championship: prior propio de los descendidos
+python scripts/backfill_espn.py --remote       # una vez, en GitHub Actions (backfill.yml): historial de ligas nuevas
+python scripts/fit_extra_leagues.py            # modelo oficial de las 11 ligas que solo alimentan la capa europea
 python scripts/europe_fit.py                   # capa europea: ajuste fuera de muestra (2011-17), prueba (2018-26) y producción
 python scripts/ucl_backtest.py                 # Champions 2018-19 a 2025-26: etapa alcanzada y campeón
 ```

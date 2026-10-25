@@ -25,9 +25,9 @@ Brasileirão, Liga Profesional argentina y Champions League, actualizadas cada d
   Championship, zonas, llaves y promedios del fútbol argentino, descuentos de puntos.
 - **"¿Y si…?" en el navegador.** Fijar resultados repondera las 20.000 temporadas sin volver
   a simular.
-- **Una escala común para Europa.** En la Champions, cada equipo de las cinco grandes ligas
-  parte de su fuerza doméstica más el nivel de su liga en Europa; los demás se estiman solo con
-  sus partidos europeos. Anclar a la liga mejora la predicción de los partidos UEFA fuera de
+- **Una escala común para Europa.** En la Champions, cada equipo parte de su fuerza doméstica
+  (16 ligas europeas modeladas) más el nivel de su liga en Europa; los pocos sin liga modelada se
+  estiman solo con sus partidos europeos. Anclar a la liga mejora la predicción de los partidos UEFA fuera de
   muestra.
 - **Ligas comparadas como una red eléctrica.** Los partidos de copa y los ascensos forman un grafo;
   su laplaciano da la fuerza relativa de cada liga y cuánta información las conecta.

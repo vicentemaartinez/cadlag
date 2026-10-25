@@ -16,6 +16,8 @@ const XCOLS: Record<XKey, { label: string; title: string; json: string }> = {
   playoffs: { label: "Play.", title: "Probabilidad de clasificar a los playoffs del torneo", json: "playoffs" },
   title: { label: "Camp.", title: "Probabilidad de salir campeón del torneo", json: "title" },
   rel: { label: "Desc.", title: "Probabilidad de descender (promedios o tabla anual)", json: "relegated" },
+  lib: { label: "Lib.", title: "Probabilidad de jugar la Copa Libertadores del año siguiente (por un título o por la tabla anual)", json: "libertadores" },
+  sud: { label: "Sud.", title: "Probabilidad de jugar la Copa Sudamericana del año siguiente (por la tabla anual)", json: "sudamericana" },
   // copas: llega al menos a esa ronda
   r16: { label: "8vos", title: "Probabilidad de jugar los octavos (directo o por el playoff)", json: "r16" },
   qf: { label: "4tos", title: "Probabilidad de llegar a cuartos de final", json: "qf" },
@@ -23,7 +25,7 @@ const XCOLS: Record<XKey, { label: string; title: string; json: string }> = {
   final: { label: "Final", title: "Probabilidad de jugar la final", json: "final" },
   champion: { label: "Camp.", title: "Probabilidad de ganar la copa", json: "champion" },
 };
-const XORDER: XKey[] = ["asc", "playoffs", "title", "rel", "r16", "qf", "sf", "final", "champion"];
+const XORDER: XKey[] = ["asc", "playoffs", "title", "lib", "sud", "rel", "r16", "qf", "sf", "final", "champion"];
 const zoneClass = (z: Zone) => (["relegation", "out"].includes(z.key) ? "zone-bot" : ["champion", "ucl", "libertadores", "promotion", "r16"].includes(z.key) ? "zone-top" : "zone-mid");
 
 function tween(dur: number, fn: (e: number) => void) {
@@ -40,7 +42,7 @@ export default function LeagueView({ D }: { D: League }) {
     const M = baseMatrix(D.order, D.teams);
     const xpts = new Float64Array(n), epos = new Float64Array(n);
     const ex: Extras = {};
-    const keys: XKey[] = D.sims.asc ? ["asc"] : D.sims.split ? (D.sims.split.promedios ? ["playoffs", "title", "rel"] : ["playoffs", "title"])
+    const keys: XKey[] = D.sims.asc ? ["asc"] : D.sims.split ? [...(D.sims.split.promedios ? ["playoffs", "title", "rel"] as XKey[] : ["playoffs", "title"] as XKey[]), ...(D.sims.split.cups ? ["lib", "sud"] as XKey[] : [])]
       : D.sims.cup ? (Object.keys(REACH) as ReachKey[]) : [];
     for (const k of keys) ex[k] = new Float64Array(n);
     D.teams.forEach((t) => { const i = D.order.indexOf(t.id); xpts[i] = t.xpts; epos[i] = t.expected_position; for (const k of keys) ex[k]![i] = t.zones[XCOLS[k].json] ?? 0; });
@@ -51,6 +53,8 @@ export default function LeagueView({ D }: { D: League }) {
   const [sim, setSim] = useState<Sim | null>(null);
   const [fixed, setFixed] = useState<Record<number, number>>({});
   const [sort, setSort] = useState<"table" | "exp">("table");
+  // Argentina: matriz de la tabla anual o de cada zona del torneo en curso
+  const [view, setView] = useState<"anual" | 0 | 1>("anual");
   const [drawer, setDrawer] = useState<number | null>(null);
   const [themeTick, setThemeTick] = useState(0);
 
@@ -68,7 +72,10 @@ export default function LeagueView({ D }: { D: League }) {
     Object.entries(fixed).forEach(([k, o]) => { const h = fxHi[+k], a = fxAi[+k]; pts[h] += [3, 1, 0][o]; pts[a] += [0, 1, 3][o]; pj[h]++; pj[a]++; });
     return { pts, pj };
   }, [fixed, fxHi, fxAi, n]);
+  const zoneMode = view !== "anual" && !!cur.zM;
+  const zoneTeams = useMemo(() => (view === "anual" || !D.sims.split ? [] : D.sims.split.zone.map((z, i) => (z === view ? i : -1)).filter((i) => i >= 0)), [view, D.sims.split]);
   const M = cur.M;
+  const MV = zoneMode ? cur.zM! : M, stride = zoneMode ? 16 : n, nc = zoneMode ? zoneTeams.length : n;
   const any = Object.keys(fixed).length > 0;
   const zones = D.meta.zones;
   const cup = !!D.sims.cup;
@@ -96,7 +103,15 @@ export default function LeagueView({ D }: { D: League }) {
   const tableOrder = useMemo(() => D.teams.map((t, r) => [idx(t.id), t.points + extra.pts[idx(t.id)], r] as const)
     .sort((a, b) => b[1] - a[1] || a[2] - b[2]).map((x) => x[0]), [D.teams, idx, extra]);
   const rankNow = useMemo(() => { const m = new Map<number, number>(); tableOrder.forEach((t, i) => m.set(t, i + 1)); return m; }, [tableOrder]);
-  const order = useMemo(() => (sort === "table" ? tableOrder : [...Array(n).keys()].sort((a, b) => cur.epos[a] - cur.epos[b])), [sort, tableOrder, n, cur]);
+  const order = useMemo(() => {
+    if (zoneMode) {
+      const T = (t: number) => D.teams.find((x) => x.id === D.order[t])!;
+      const ann = new Map(tableOrder.map((t, i) => [t, i]));
+      return sort === "table" ? [...zoneTeams].sort((a, b) => ((T(b).tpts ?? 0) + extra.pts[b]) - ((T(a).tpts ?? 0) + extra.pts[a]) || ann.get(a)! - ann.get(b)!)
+        : [...zoneTeams].sort((a, b) => cur.zepos![a] - cur.zepos![b]);
+    }
+    return sort === "table" ? tableOrder : [...Array(n).keys()].sort((a, b) => cur.epos[a] - cur.epos[b]);
+  }, [sort, tableOrder, n, cur, zoneMode, zoneTeams, D, extra]);
 
   // --- matriz: FLIP de filas + interpolación de celdas
   const tbody = useRef<HTMLTableSectionElement>(null);
@@ -115,9 +130,9 @@ export default function LeagueView({ D }: { D: League }) {
   }, [order]);
   useEffect(() => {
     const tb = tbody.current; if (!tb) return; reloadHeat();
-    const target = Float64Array.from(M); const prev = prevCells.current;
+    const target = Float64Array.from(MV); const prev = prevCells.current && prevCells.current.length === MV.length ? prevCells.current : null;
     const cells: [HTMLTableCellElement, number][] = [];
-    tb.querySelectorAll<HTMLTableCellElement>("td.cell").forEach((td) => cells.push([td, +td.dataset.t! * n + +td.dataset.k!]));
+    tb.querySelectorAll<HTMLTableCellElement>("td.cell").forEach((td) => cells.push([td, +td.dataset.t! * stride + +td.dataset.k!]));
     const paint = (td: HTMLTableCellElement, v: number) => {
       if (v < 0.0005) { td.textContent = ""; td.style.background = ""; td.classList.add("e"); td.style.color = ""; return; }
       td.classList.remove("e"); td.style.background = heat(v); td.style.color = v > 0.33 ? "var(--heat-text)" : "";
@@ -125,7 +140,7 @@ export default function LeagueView({ D }: { D: League }) {
     };
     tween(prev ? 520 : 0, (e) => { for (const [td, i] of cells) { const a = prev ? prev[i] : target[i]; paint(td, a + (target[i] - a) * e); } });
     prevCells.current = target;
-  }, [M, n, themeTick]);
+  }, [MV, stride, themeTick, view]);
 
   // --- tooltip, cruz y halo que sigue al mouse
   const shell = useRef<HTMLDivElement>(null), tip = useRef<HTMLDivElement>(null), table = useRef<HTMLTableElement>(null);
@@ -135,8 +150,8 @@ export default function LeagueView({ D }: { D: League }) {
     const td = (e.target as HTMLElement).closest<HTMLTableCellElement>("td.cell"); if (!td) return;
     const tr = td.parentElement!; const k = +td.dataset.k!, t = +td.dataset.t!; clearHl();
     const col = table.current!.querySelectorAll("col")[FIX + k]; tr.classList.add("rowhl"); td.classList.add("hl"); col?.classList.add("colhl"); last.current = { tr, td, col };
-    const v = M[t * n + k]; const rr = td.getBoundingClientRect(); const tp = tip.current!;
-    tp.textContent = `${D.teams.find((x) => x.id === D.order[t])!.name} · ${k + 1}.º · ${v < 0.0005 ? "menos de 0,05" : fmt(v * 100, 1)} %`;
+    const v = MV[t * stride + k]; const rr = td.getBoundingClientRect(); const tp = tip.current!;
+    tp.textContent = `${D.teams.find((x) => x.id === D.order[t])!.name} · ${k + 1}.º${zoneMode ? ` de la zona ${"AB"[view as number]}` : ""} · ${v < 0.0005 ? "menos de 0,05" : fmt(v * 100, 1)} %`;
     tp.style.left = rr.left + rr.width / 2 + "px"; tp.style.top = rr.top + "px"; tp.classList.add("on");
   };
 
@@ -152,8 +167,9 @@ export default function LeagueView({ D }: { D: League }) {
   const labN = useRef<HTMLElement>(null); const labPrev = useRef(S);
   useEffect(() => { const from = labPrev.current, to = cur.ess; labPrev.current = to; tween(500, (e) => { if (labN.current) labN.current.textContent = fmtInt(from + (to - from) * e); }); }, [cur.ess]);
 
-  const zrow = [...Array(n).keys()].map((p) => zones.filter((z) => z.key !== "champion").find((z) => z.positions.includes(p + 1)) || null);
-  const zheads: { z: Zone | null; span: number }[] = []; for (let p = 0; p < n;) { let q = p; while (q + 1 < n && zrow[q + 1] === zrow[p]) q++; zheads.push({ z: zrow[p], span: q - p + 1 }); p = q + 1; }
+  const zPO: Zone = { key: "playoffs-zona", label: `Playoffs del ${split?.tournament ?? "torneo"}`, positions: [1, 2, 3, 4, 5, 6, 7, 8] };
+  const zrow = [...Array(nc).keys()].map((p) => (zoneMode ? (p < 8 ? zPO : null) : zones.filter((z) => z.key !== "champion").find((z) => z.positions.includes(p + 1)) || null));
+  const zheads: { z: Zone | null; span: number }[] = []; for (let p = 0; p < nc;) { let q = p; while (q + 1 < nc && zrow[q + 1] === zrow[p]) q++; zheads.push({ z: zrow[p], span: q - p + 1 }); p = q + 1; }
   const rowsById = new Map(D.teams.map((t) => [idx(t.id), t]));
   const nf = Object.keys(fixed).length;
 
@@ -183,18 +199,23 @@ export default function LeagueView({ D }: { D: League }) {
         <div className="board">
           <div className="matrix-shell" ref={shell} onPointerMove={(e) => { const rr = shell.current!.getBoundingClientRect(); shell.current!.style.setProperty("--mx", e.clientX - rr.left + "px"); shell.current!.style.setProperty("--my", e.clientY - rr.top + "px"); }}>
             <div className="mx-toolbar">
-              <h2 className="mx-title">{cup ? "Puesto en la fase liga" : "Posiciones finales"}</h2>
+              <h2 className="mx-title">{cup ? "Puesto en la fase liga" : zoneMode ? `Zona ${"AB"[view as number]} del ${split!.tournament}` : "Posiciones finales"}</h2>
+              {split && (
+                <div className="seg" role="group" aria-label="Tabla">
+                  {(["anual", 0, 1] as const).map((v) => <button key={String(v)} type="button" disabled={v !== "anual" && !sim} aria-pressed={view === v} onClick={() => setView(v)}>{v === "anual" ? "Tabla anual" : `Zona ${"AB"[v]}`}</button>)}
+                </div>
+              )}
               <div className="seg" role="group" aria-label="Orden de filas">
                 <button type="button" aria-pressed={sort === "table"} onClick={() => setSort("table")}>Tabla actual</button>
                 <button type="button" aria-pressed={sort === "exp"} onClick={() => setSort("exp")}>Posición esperada</button>
               </div>
             </div>
             <div className="mx-scroll">
-              <table className="mx" ref={table} style={{ minWidth: 400 + xkeys.length * 50 + n * 38 }} onPointerOver={onOver} onPointerLeave={() => { tip.current?.classList.remove("on"); clearHl(); }}>
-                <colgroup><col style={{ width: 26 }} /><col style={{ width: 210 }} /><col style={{ width: 30 }} /><col style={{ width: 40 }} /><col style={{ width: 38 }} /><col style={{ width: 56 }} />{xkeys.map((k) => <col key={k} style={{ width: 50 }} />)}{[...Array(n)].map((_, k) => <col key={k} />)}</colgroup>
+              <table className="mx" ref={table} style={{ minWidth: 400 + xkeys.length * 50 + nc * 38 }} onPointerOver={onOver} onPointerLeave={() => { tip.current?.classList.remove("on"); clearHl(); }}>
+                <colgroup><col style={{ width: 26 }} /><col style={{ width: 210 }} /><col style={{ width: 30 }} /><col style={{ width: 40 }} /><col style={{ width: 38 }} /><col style={{ width: 56 }} />{xkeys.map((k) => <col key={k} style={{ width: 50 }} />)}{[...Array(nc)].map((_, k) => <col key={k} />)}</colgroup>
                 <thead>
                   <tr className="zones"><th colSpan={FIX} />{zheads.map((h, i) => <th key={i} colSpan={h.span}>{h.z && <div className={zoneClass(h.z)} title={h.z.label}>{h.z.label}</div>}</th>)}</tr>
-                  <tr className="cols"><th /><th style={{ textAlign: "left", paddingLeft: 4 }}>Equipo</th><th style={{ textAlign: "right", paddingRight: 6 }}>PJ</th><th style={{ textAlign: "right", paddingRight: 6 }}>Pts</th><th style={{ textAlign: "right", paddingRight: 6 }}>xPts</th><th style={{ textAlign: "right", paddingRight: 8 }} title="Posición esperada">Pos. esp.</th>{xkeys.map((k) => <th key={k} className="asc-h" title={XCOLS[k].title}>{XCOLS[k].label}</th>)}{[...Array(n)].map((_, k) => <th key={k} className="p">{k + 1}</th>)}</tr>
+                  <tr className="cols"><th /><th style={{ textAlign: "left", paddingLeft: 4 }}>Equipo</th><th style={{ textAlign: "right", paddingRight: 6 }}>PJ</th><th style={{ textAlign: "right", paddingRight: 6 }}>Pts</th><th style={{ textAlign: "right", paddingRight: 6 }}>xPts</th><th style={{ textAlign: "right", paddingRight: 8 }} title="Posición esperada">Pos. esp.</th>{xkeys.map((k) => <th key={k} className="asc-h" title={XCOLS[k].title}>{XCOLS[k].label}</th>)}{[...Array(nc)].map((_, k) => <th key={k} className="p">{k + 1}</th>)}</tr>
                 </thead>
                 <tbody ref={tbody}>
                   {order.map((t) => {
@@ -204,17 +225,17 @@ export default function LeagueView({ D }: { D: League }) {
                     const show = any && Math.abs(dv) >= 0.005;
                     return (
                       <tr key={t} data-t={t}>
-                        <td className="pos tnum">{rankNow.get(t)}</td>
+                        <td className="pos tnum">{zoneMode ? order.indexOf(t) + 1 : rankNow.get(t)}</td>
                         <td className="team"><button className="team-btn" type="button" onClick={() => setDrawer(t)}>
-                          <span className="badge">{initials(T.name)}</span><span className="nm">{T.name}</span>{T.zone && <span className="ztag" title={`Zona ${T.zone}`}>{T.zone}</span>}
+                          <span className="badge">{initials(T.name)}</span><span className="nm">{T.name}</span>{T.few_data && <span className="adj" title="Pocos datos: su liga no está modelada y jugó pocos partidos europeos recientes">*</span>}{T.zone && <span className="ztag" title={`Zona ${T.zone}`}>{T.zone}</span>}
                           <span className={"delta" + (show ? " show " + (dv > 0 ? "up" : "down") : "")}>{show ? `${dv > 0 ? "+" : "−"}${fmt(Math.abs(dv) * 100, 1)} ${lab}` : ""}</span>
                         </button></td>
-                        <td className="num tnum">{T.played + extra.pj[t]}</td>
-                        <td className="num pts tnum" title={T.adj ? `Incluye un descuento de ${-T.adj} puntos` : undefined}>{T.points + extra.pts[t]}{T.adj ? <span className="adj">*</span> : null}{extra.pj[t] > 0 && <sup className="plus">+{extra.pts[t]}</sup>}</td>
-                        <td className="num tnum">{fmt(cur.xpts[t], 0)}</td>
-                        <td className="num tnum epos">{fmt(cur.epos[t], 1)}{(() => { const dv = cur.epos[t] - base.epos[t]; return any && Math.abs(dv) >= 0.05 ? <sup className={dv < 0 ? "up" : "down"}>{dv < 0 ? "↑" : "↓"}{fmt(Math.abs(dv), 1)}</sup> : null; })()}</td>
+                        <td className="num tnum">{(zoneMode ? T.tpj ?? 0 : T.played) + extra.pj[t]}</td>
+                        <td className="num pts tnum" title={T.adj ? `Incluye un descuento de ${-T.adj} puntos` : undefined}>{(zoneMode ? T.tpts ?? 0 : T.points) + extra.pts[t]}{T.adj ? <span className="adj">*</span> : null}{extra.pj[t] > 0 && <sup className="plus">+{extra.pts[t]}</sup>}</td>
+                        <td className="num tnum">{fmt(zoneMode ? cur.zx![t] : cur.xpts[t], 0)}</td>
+                        <td className="num tnum epos">{fmt(zoneMode ? cur.zepos![t] : cur.epos[t], 1)}{(() => { const dv = zoneMode ? cur.zepos![t] - base.zepos![t] : cur.epos[t] - base.epos[t]; return any && Math.abs(dv) >= 0.05 ? <sup className={dv < 0 ? "up" : "down"}>{dv < 0 ? "↑" : "↓"}{fmt(Math.abs(dv), 1)}</sup> : null; })()}</td>
                         {xkeys.map((k) => { const v = cur.ex[k]![t]; return <td key={k} className={"num tnum asc-c" + (k === "rel" ? " rel" : "")} style={{ background: v >= 0.0005 ? heat(v) : undefined, color: v > 0.33 ? "var(--heat-text)" : undefined }}>{v >= 0.0005 ? (v >= 0.9995 ? "100" : fmt(v * 100, 1)) : ""}</td>; })}
-                        {[...Array(n)].map((_, k) => <td key={k} className="cell tnum" data-t={t} data-k={k} />)}
+                        {[...Array(nc)].map((_, k) => <td key={k} className="cell tnum" data-t={t} data-k={k} />)}
                       </tr>
                     );
                   })}
@@ -222,7 +243,7 @@ export default function LeagueView({ D }: { D: League }) {
               </table>
             </div>
             <div className="mx-foot"><span>{any ? `Escenario con ${nf} resultado${nf > 1 ? "s" : ""} fijado${nf > 1 ? "s" : ""}` : `Pronóstico base · ${D.meta.matches_played} de ${D.meta.matches_total} partidos jugados`}</span><span className="tnum">{any ? `muestra efectiva ${fmtInt(cur.ess)} de ${fmtInt(S)}` : `${fmtInt(S)} ${cup ? "ediciones" : "temporadas"}`}</span></div>
-            <p className="note" style={{ marginTop: 4 }}>En % sobre {fmtInt(S)} {cup ? "ediciones" : "temporadas"}. {cup ? "Posiciones de la fase liga: del 1 al 8 a octavos, del 9 al 24 al playoff. Columnas: llega al menos a octavos, cuartos, semis y final, y gana la copa. " : ""}{isAsc ? "Asc.: asciende directo o por playoffs. " : split ? `Tabla anual (Apertura + Clausura). Play.: clasifica a octavos del ${split.tournament}; Camp.: lo gana; Desc.: desciende por promedios o por la tabla anual. ` : ""}Toca un equipo para ver qué necesita.{D.teams.filter((x) => x.adj).map((x) => ` * ${x.name}: descuento de ${-x.adj!} puntos.`).join("")}</p>
+            <p className="note" style={{ marginTop: 4 }}>En % sobre {fmtInt(S)} {cup ? "ediciones" : "temporadas"}. {cup ? "Posiciones de la fase liga: del 1 al 8 a octavos, del 9 al 24 al playoff. Columnas: llega al menos a octavos, cuartos, semis y final, y gana la copa. " : ""}{isAsc ? "Asc.: asciende directo o por playoffs. " : split ? `${zoneMode ? `Puesto en la zona ${"AB"[view as number]} del ${split.tournament}: los 8 primeros van a los playoffs.` : "Tabla anual (Apertura + Clausura)."} Play.: clasifica a octavos del ${split.tournament}; Camp.: lo gana; ${split.cups ? "Lib. y Sud.: juega la Libertadores o la Sudamericana del año siguiente (los campeones van a la Libertadores y la tabla anual reparte el resto, saltando a los ya clasificados; el campeón de la Copa Argentina se suma cuando se conozca); " : ""}Desc.: desciende por promedios o por la tabla anual. ` : ""}Toca un equipo para ver qué necesita.{D.teams.filter((x) => x.adj).map((x) => ` * ${x.name}: descuento de ${-x.adj!} puntos.`).join("")}{D.teams.some((x) => x.few_data) ? ` * Pocos datos (${D.teams.filter((x) => x.few_data).map((x) => x.name).join(", ")}): su liga no está modelada y jugó pocos partidos europeos en las últimas tres temporadas, así que su fuerza es muy incierta.` : ""}</p>
           </div>
 
           <aside className="lab" aria-labelledby="lab-title">

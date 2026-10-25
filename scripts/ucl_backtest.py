@@ -9,8 +9,8 @@ de eliminación) se simula el torneo con lo que se sabía ese día y se mide:
     playoff, octavos, cuartos, semis, final, campeón; con grupos: grupos, octavos, ..., campeón);
   * −log P(campeón real).
 
-Compara la capa europea (fuerzas domésticas + residuo europeo) con la misma capa solo con partidos
-de copa. Ediciones 2018-19 a 2023-24 con fase de grupos (``sim.ucl_groups``), 2024-25 y 2025-26
+Compara la capa europea con las 16 ligas domésticas (las cinco grandes y ``EUROPE_EXTRA``) con la
+misma capa anclada solo a las cinco grandes (R20 la comparó con la capa solo de copas). Ediciones 2018-19 a 2023-24 con fase de grupos (``sim.ucl_groups``), 2024-25 y 2025-26
 con fase liga (``sim.ucl``).
 
 Uso: python scripts/ucl_backtest.py [n_sims]  → outputs/analysis/ucl_backtest.json
@@ -30,7 +30,8 @@ m, teams = store.load()
 names = dict(zip(teams["team_id"], teams["name"]))
 dom = eu.load_domestic(m, "backtest")
 fitb = json.load(open(store.ROOT / "outputs" / "europe" / "fit_backtest.json"))
-VARIANTS = {"europa": (120, fitb["dom"]["h"]), "solo_copas": (-1, fitb["solo_copas"]["h"])}
+# capa con las 16 ligas domésticas frente a la misma capa con solo las cinco grandes
+VARIANTS = {"europa": (120, fitb["dom"]["h"], dom), "europa5": (120, fitb["dom5"]["h"], dom[dom["comp"].isin(eu.BIG5)])}
 comp = "uefa.champions"
 PEN_CHAMP = {2025: "Paris Saint-Germain"}   # finales por penales (ESPN no trae la tanda)
 rows = []
@@ -77,11 +78,11 @@ for syear in range(2018, 2026):
         asof = pd.Timestamp(asof)
         asof = asof.tz_localize("UTC") if asof.tzinfo is None else asof
         cs = ucl.cup_state(m, comp, syear, names, asof=asof) if new else ug.group_state(m, comp, syear, asof=asof)
-        for name, (md_, h) in VARIANTS.items():
-            ed = eu.build(m, dom, max_days=md_, upto=asof)
+        for name, (md_, h, dd) in VARIANTS.items():
+            ed = eu.build(m, dd, max_days=md_, upto=asof)
             ef = eu.EuroFilter(ed, np.array(h))
             final, _ = ef.run()
-            st = eu.strengths_at(ef, final, dom, cs.teams, asof, comp, max_days=md_)
+            st = eu.strengths_at(ef, final, dd, cs.teams, asof, comp, max_days=md_)
             stg = (ucl.simulate_cup(cs, st.draw, S=S, seed=0, r=st.r)["stage"] if new
                    else ug.simulate_groups(cs, st.draw, S=S, seed=0, r=st.r))
             K = len(ladder) + 2
@@ -98,7 +99,7 @@ print(summ)
 out = dict(resumen={f"{a}/{b}": v for (a, b), v in summ.to_dict("index").items()})
 for metric in ("log_etapa", "log_campeon"):
     piv = D.pivot_table(index=["syear", "momento"], columns="modelo", values=metric, sort=False)
-    dd = piv["europa"] - piv["solo_copas"]
+    dd = piv["europa"] - piv["europa5"]
     by_ed = dd.groupby(level=0).mean()          # una cifra por edición: los momentos están correlacionados
     out[f"dif_{metric}"] = dict(media=float(by_ed.mean()), se_ediciones=float(by_ed.std() / np.sqrt(len(by_ed))),
                                 por_edicion={int(k): float(v) for k, v in by_ed.items()})

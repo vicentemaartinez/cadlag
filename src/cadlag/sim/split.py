@@ -143,7 +143,34 @@ def season_state_split(matches, comp, syear, team_index, asof, league):
     mi = np.array([team_index[t] for t in teams])
     st = SeasonState(teams, mi, done, todo, adj, comp, int(syear))
     st.split = dict(zone=zone, cur=cur, known=known, prev=prev, games=games)
+    from ..leagues import CUP_SPOTS
+    spots = CUP_SPOTS.get((comp, int(syear)))
+    if spots:
+        from ..data import store
+        _, tm = store.load()
+        ids = {v: k for k, v in zip(tm["team_id"], tm["name"]) if k in loc}
+        st.split["cups"] = dict(fixed=[loc[ids[x]] for x in spots["fixed"] if x in ids],
+                                lib=list(spots["lib"]), sud=list(spots["sud"]))
     return st
+
+
+def cup_spots(pos, title, cups):
+    """Libertadores y Sudamericana por la tabla anual, (S, n) cada una: se recorre la tabla saltando a
+    los ya clasificados (campeones conocidos y el campeón simulado del torneo en curso)."""
+    S, n = pos.shape
+    order = np.argsort(pos, axis=1)                         # equipo en cada puesto
+    q = title.copy()
+    q[:, cups["fixed"]] = True
+    lib = q.copy(); sud = np.zeros((S, n), bool)
+    elig = ~np.take_along_axis(q, order, 1)                 # (S, n) puesto elegible
+    rank = np.cumsum(elig, 1) - 1                           # posición entre los elegibles
+    for k in cups["lib"]:
+        hit = elig & (rank == k)
+        lib[np.arange(S)[:, None].repeat(n, 1)[hit], order[hit]] = True
+    for k in cups["sud"]:
+        hit = elig & (rank == k)
+        sud[np.arange(S)[:, None].repeat(n, 1)[hit], order[hit]] = True
+    return lib, sud
 
 
 def tournament_table_now(st):
@@ -228,4 +255,7 @@ def split_outcomes(st, gx, gy, pos, pts, X, n, params, rng):
             w = knockout(X, second, first, n, params, rng, legs=1, neutral=True)
             r2 = np.where(tie_m, np.where(w == first, second, first), first)
         rel[np.arange(S), r2] = True
-    return dict(zpos=zpos, zpts=zp, title=title, rel=rel, zone=zone)
+    out = dict(zpos=zpos, zpts=zp, title=title, rel=rel, zone=zone)
+    if sp.get("cups"):
+        out["lib"], out["sud"] = cup_spots(pos, title, sp["cups"])
+    return out

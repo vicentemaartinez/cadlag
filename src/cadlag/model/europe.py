@@ -50,12 +50,14 @@ import numpy as np
 import pandas as pd
 
 from ..data import store
+from ..leagues import EUROPE_EXTRA
 from .filter_shots2 import _laplace, _nb
 
 jax.config.update("jax_enable_x64", True)
 
 UEFA = ["uefa.champions", "uefa.europa", "uefa.europa.conf"]
-DOMESTIC = ["eng.1", "esp.1", "ita.1", "ger.1", "fra.1"]   # el primero es la referencia
+BIG5 = ["eng.1", "esp.1", "ita.1", "ger.1", "fra.1"]       # la Premier es la referencia
+DOMESTIC = BIG5 + EUROPE_EXTRA                               # ligas con modelo doméstico
 OFFSET_LEAGUES = DOMESTIC[1:]
 G = 2 + 2 * len(OFFSET_LEAGUES)                              # (mu, eta, A_ℓ..., D_ℓ...)
 CACHE = store.ROOT / "outputs" / "europe"
@@ -63,17 +65,18 @@ CACHE = store.ROOT / "outputs" / "europe"
 HYPER_NAMES = ["mu0", "eta0", "log_qg", "log_tau", "log_voff0", "log_r", "log_qt", "logit_phi", "log_st",
                "log_v0", "beta_ucl", "beta_uel", "beta_uecl", "gamma", "log_vdom",
                "log_vu", "logit_phiu", "log_su",     # residuo europeo de los equipos con liga
-               "beta_qual"]                          # prior de quien aparece en las previas
+               "beta_qual",                          # prior de quien aparece en las previas
+               "off_extra", "log_voff_extra"]        # prior de los offsets de las ligas fuera del top 5
 DEFAULT_HYPER = np.array([0.15, 0.25, np.log(1e-6), np.log(0.06), np.log(0.1 ** 2), np.log(20.0), np.log(2e-5),
                           2.0, np.log(0.08), np.log(0.15), -0.15, -0.35, -0.50, 1.0, np.log(1e-3),
-                          np.log(0.01), 1.0, np.log(0.05), -0.9])
+                          np.log(0.01), 1.0, np.log(0.05), -0.9, -0.35, np.log(0.2 ** 2)])
 
 
 def unpack(h):
     return dict(mu0=h[0], eta0=h[1], qg=jnp.exp(h[2]), tau=jnp.exp(h[3]), voff0=jnp.exp(h[4]), r=jnp.exp(h[5]),
                 qt=jnp.exp(h[6]), phi=jax.nn.sigmoid(h[7]), st=jnp.exp(h[8]), v0=jnp.exp(h[9]),
                 beta=jnp.stack([h[10], h[11], h[12], h[18]]), gamma=h[13], vdom=jnp.exp(h[14]),
-                vu=jnp.exp(h[15]), phiu=jax.nn.sigmoid(h[16]), su=jnp.exp(h[17]))
+                vu=jnp.exp(h[15]), phiu=jax.nn.sigmoid(h[16]), su=jnp.exp(h[17]), off_extra=h[19], voff_extra=jnp.exp(h[20]))
 
 
 def pad(h):
@@ -116,6 +119,9 @@ def domestic_states(matches: pd.DataFrame, which: str = "prod", comps=DOMESTIC) 
         ld = with_shots(prepare(matches, comp), stats)
         hf = (store.ROOT / "models" / f"{comp}_shots2_h.npy") if which == "prod" else \
              (store.ROOT / "outputs" / "backtest" / f"{comp}_shots2_h_2016.npy")
+        if not hf.exists() or not (matches["comp"] == comp).any():   # liga sin modelo o sin datos todavía
+            print(f"[europa] {comp}: sin modelo o sin datos, sus equipos quedan con estado propio", flush=True)
+            continue
         mod = TwoLatentShots(ld, pad(np.load(hf)))
         _, _, o = mod.run()
         kap = 1 - 1 / (1 + np.exp(-o["phi"]))      # κ = 1 − σ(φ) en esa fecha
@@ -242,6 +248,7 @@ def _ll(z, x, y, r):
 _g = jax.grad(_ll)
 _h = jax.hessian(_ll)
 NOFF = len(OFFSET_LEAGUES)
+EXTRA_MASK = np.array([float(c not in BIG5) for c in OFFSET_LEAGUES])
 
 
 def _offset_rows(L, sign_att):
@@ -256,8 +263,9 @@ def make_filter(nT: int, chunk: int = 128):
     def run(h, arr):
         hp = unpack(h)
         beta = hp["beta"]
-        mg0 = jnp.zeros(G).at[0].set(hp["mu0"]).at[1].set(hp["eta0"])
-        Pg0 = jnp.diag(jnp.r_[jnp.full(2, 0.05 ** 2), jnp.full(2 * NOFF, hp["voff0"])])
+        ex = jnp.r_[EXTRA_MASK, EXTRA_MASK]        # offsets (A, D) de ligas fuera del top 5
+        mg0 = jnp.r_[hp["mu0"], hp["eta0"], ex * hp["off_extra"]]
+        Pg0 = jnp.diag(jnp.r_[jnp.full(2, 0.05 ** 2), (1 - ex) * hp["voff0"] + ex * hp["voff_extra"]])
         isoff = jnp.r_[0.0, 0.0, jnp.ones(2 * NOFF)]
         TM0 = jnp.zeros((nT, 2)); TP0 = jnp.tile(jnp.eye(2), (nT, 1, 1)); Tl = jnp.zeros(nT); Ts = -jnp.ones(nT, int)
         Tc = -jnp.ones(nT)

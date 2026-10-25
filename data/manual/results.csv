@@ -1,0 +1,8 @@
+# Resultados que ESPN dejó sin cerrar (se aplican solo mientras ESPN no los dé por terminados).
+# comp,date (UTC),local,visita (nombres de ESPN),goles local,goles visita. Fuente: crónicas de La Nación e Infobae del partido.
+comp,date,home,away,hg,ag
+arg.1,2026-10-18,Estudiantes de La Plata,San Lorenzo,1,2
+arg.1,2026-10-18,Estudiantes de Río Cuarto,Aldosivi,2,1
+arg.1,2026-10-18,Belgrano (Córdoba),River Plate,0,3
+arg.1,2026-10-19,Sarmiento (Junín),Barracas Central,1,1
+arg.1,2026-10-20,Deportivo Riestra,Unión (Santa Fe),1,1

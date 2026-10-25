@@ -26,6 +26,7 @@ ZONES = [dict(key="r16", label="Octavos", positions=list(range(1, 9))),
 # etapa alcanzada (sim.ucl.knockout) -> columnas "llega al menos a"
 REACH = {"r16": 2, "qf": 3, "sf": 4, "final": 5, "champion": 6}
 _CACHE: dict = {}
+FEW_DATA = 12   # partidos UEFA en tres temporadas bajo los cuales un equipo sin liga modelada lleva asterisco
 
 
 def current_cup_season(matches: pd.DataFrame, comp: str) -> int:
@@ -124,6 +125,9 @@ def forecast_cup(comp: str = "uefa.champions", matches=None, teams=None, n_sims:
     hp = ef.params()
     tb = st.table(names)
     mu = float(st.mg[0])
+    # pocos datos: sin liga modelada y con pocos partidos UEFA en las últimas tres temporadas
+    em = ef.ed.matches[(ef.ed.matches["season"] >= syear - 2) & (ef.ed.arr["w"] > 0)]
+    n_uefa = pd.concat([em["home"], em["away"]]).value_counts()
     rows = []
     for i, t in enumerate(cs.teams):
         r = tab.iloc[i]
@@ -143,7 +147,9 @@ def forecast_cup(comp: str = "uefa.champions", matches=None, teams=None, n_sims:
                          rating=dict(attack=att, defense=dfn, attack_sd=float(sd[0]), defense_sd=float(sd[1]),
                                      net=att + dfn, net_sd=float(tb.sd_net[i]),
                                      xgf_neutral=float(np.exp(mu + att)), xga_neutral=float(np.exp(mu - dfn)),
-                                     league=eu.DOMESTIC[st.L[i]] if st.core[i] else None),
+                                     league=eu.DOMESTIC[st.L[i]] if st.core[i] else None,
+                                     n_uefa=int(n_uefa.get(t, 0))),
+                         few_data=bool(not st.core[i] and n_uefa.get(t, 0) < FEW_DATA),
                          needs=need_curves(res, cs, i, rng)))
     # orden de la tabla: puntos, diferencia, goles, goles de visita, victorias, victorias de visita
     order = sorted(range(n), key=lambda i: tuple(-tab.iloc[i][c] for c in ("pts", "dg", "gf", "agf", "g", "aw")))

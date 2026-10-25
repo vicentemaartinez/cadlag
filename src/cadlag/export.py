@@ -34,7 +34,7 @@ SITE = store.ROOT / "site" / "public" / "data"
 
 LAYOUT = "o[K] sqrtq[3K] pts[n] pos[n]"   # bytes por temporada simulada (ver docstring de export_sims)
 # Argentina: además los puntos del torneo en curso y, en un byte, el puesto en la zona (bits 0-3), si
-# sale campeón (bit 4) y si desciende (bit 5).
+# sale campeón (bit 4), si desciende (bit 5) y si va a la Libertadores (bit 6) o a la Sudamericana (bit 7).
 LAYOUT_SPLIT = LAYOUT + " zpts[n] zinfo[n]"
 # copas: además la etapa alcanzada (0 fase liga, 1 playoff, 2 octavos, 3 cuartos, 4 semis, 5 final, 6 campeón)
 LAYOUT_CUP = LAYOUT + " stage[n]"
@@ -72,12 +72,16 @@ def export_sims(S: int = 20000, K: int = 10, comps=None, seed: int = 7, cups=Non
         if r.extra is not None:
             X = r.extra
             zinfo = (X["zpos"].astype(np.uint8) | (X["title"].astype(np.uint8) << 4) | (X["rel"].astype(np.uint8) << 5))
+            if "lib" in X:   # bits 6 y 7: Libertadores y Sudamericana del año siguiente
+                zinfo = zinfo | (X["lib"].astype(np.uint8) << 6) | (X["sud"].astype(np.uint8) << 7)
             parts += [np.clip(X["zpts"], 0, 255).astype(np.uint8), zinfo]
             sp = st.split
             prev = sp["prev"] if sp["prev"] is not None else np.zeros((len(st.teams), 2))
             split = dict(zone=[int(z) for z in X["zone"]], prev_pts=[float(x) for x in prev[:, 0]],
                          prev_games=[float(x) for x in prev[:, 1]], games=[float(x) for x in sp["games"]],
-                         promedios=sp["prev"] is not None, tournament=["Apertura", "Clausura"][sp["cur"]])
+                         promedios=sp["prev"] is not None, tournament=["Apertura", "Clausura"][sp["cur"]],
+                         **({"cups": dict(fixed=[int(i) for i in sp["cups"]["fixed"]], lib=sp["cups"]["lib"], sud=sp["cups"]["sud"])}
+                            if sp.get("cups") else {}))
         blob = np.concatenate(parts, axis=1).tobytes()
         fixtures = []
         for j in range(k):
@@ -211,6 +215,9 @@ def export_web() -> None:
                 t["zones"]["title"] = r4(((z[:, i] >> 4) & 1).mean())
                 t["zones"]["playoffs"] = r4(((z[:, i] & 0x0F) < 8).mean())
                 t["zones"]["relegated"] = r4(((z[:, i] >> 5) & 1).mean())
+                if sims["split"].get("cups"):
+                    t["zones"]["libertadores"] = r4(((z[:, i] >> 6) & 1).mean())
+                    t["zones"]["sudamericana"] = r4(((z[:, i] >> 7) & 1).mean())
         if sims.get("cup"):   # etapas de la copa desde las mismas simulaciones
             n_ = sims["n"]; b = np.frombuffer(raw, np.uint8).reshape(sims["S"], -1)
             stg = b[:, 4 * sims["K"] + 2 * n_:4 * sims["K"] + 3 * n_]

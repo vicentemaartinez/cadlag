@@ -37,11 +37,57 @@ def save(matches: pd.DataFrame, teams: pd.DataFrame) -> None:
     teams.to_parquet(TEAMS, index=False)
 
 
+MANUAL = ROOT / "data" / "manual" / "results.csv"
+
+
+def apply_manual(matches: pd.DataFrame, teams: pd.DataFrame) -> pd.DataFrame:
+    """Resultados cargados a mano (``data/manual/results.csv``) para partidos que ESPN dejó sin
+    terminar. Cada fila (comp, date, home, away, hg, ag; equipos por nombre de ESPN) se cruza con el
+    partido de esa competición y esos equipos más cercano a la fecha (±4 días); solo se aplica si
+    ESPN todavía no lo da por terminado, así que cuando ESPN se pone al día manda ESPN."""
+    if not MANUAL.exists():
+        return matches
+    man = pd.read_csv(MANUAL, comment="#")
+    if man.empty:
+        return matches
+    ids = {}
+    for tid, nm in zip(teams["team_id"], teams["name"]):
+        ids.setdefault(nm, tid)
+    m = matches.copy()
+    for r in man.itertuples():
+        h, a = ids.get(r.home), ids.get(r.away)
+        if h is None or a is None:
+            print(f"resultado manual sin equipo: {r.home} – {r.away}")
+            continue
+        k = m[(m["comp"] == r.comp) & (m["home"] == h) & (m["away"] == a)]
+        if not len(k):
+            continue
+        gap = (k["date"] - pd.Timestamp(r.date, tz="UTC")).abs()
+        i = gap.idxmin()
+        if gap[i] > pd.Timedelta(days=4) or bool(m.at[i, "finished"]):
+            continue
+        m.loc[i, ["hg", "ag"]] = [float(r.hg), float(r.ag)]
+        m.loc[i, ["finished", "pending", "live"]] = [True, False, False]
+        m.loc[i, "status"] = "FULL_TIME"
+    return m
+
+
 def load() -> tuple[pd.DataFrame, pd.DataFrame]:
     if not MATCHES.exists():
         m, t = build_from_raw()
         save(m, t)
-    return pd.read_parquet(MATCHES), pd.read_parquet(TEAMS)
+    t = pd.read_parquet(TEAMS)
+    return apply_manual(pd.read_parquet(MATCHES), t), t
+
+
+def _stale_days(matches: pd.DataFrame, comps: list[str], today, lookback: int = 30, cap: int = 10) -> list[str]:
+    """Días de los últimos ``lookback`` con partidos que ya debieron jugarse pero siguen "programados":
+    ESPN a veces cierra el resultado después de que la ventana de ``days_back`` ya pasó."""
+    d = matches[matches["comp"].isin(comps) & ~matches["finished"]]
+    now = pd.Timestamp.now(tz="UTC")
+    d = d[(d["date"] < now - pd.Timedelta(hours=3)) & (d["date"] >= pd.Timestamp(today - dt.timedelta(days=lookback), tz="UTC"))]
+    days = sorted(set(d["date"].dt.tz_convert("America/New_York").dt.strftime("%Y%m%d")), reverse=True)
+    return days[:cap]
 
 
 def _missing_stat_days(matches: pd.DataFrame, comps: list[str], today, lookback: int = 60, cap: int = 12) -> list[str]:
@@ -75,6 +121,7 @@ def update(comps: list[str], days_back: int = 3, days_forward: int = 1,
     keys = [(today + dt.timedelta(days=k)).strftime("%Y%m%d") for k in range(-days_back, days_forward + 1)]
     keys += months or []
     keys += _missing_stat_days(matches, comps, today)
+    keys += _stale_days(matches, comps, today)
     keys = list(dict.fromkeys(keys))
     s = requests.Session()
     frames, names, stats = [], {}, []

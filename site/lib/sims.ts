@@ -9,6 +9,7 @@ import { BASE } from "./leagues";
 // (0 fase liga, 1 playoff, 2 octavos, 3 cuartos, 4 semis, 5 final, 6 campeón).
 export type SplitMeta = {
   zone: number[]; prev_pts: number[]; prev_games: number[]; games: number[]; promedios: boolean; tournament: string;
+  cups?: { fixed: number[]; lib: number[]; sud: number[] };   // Libertadores y Sudamericana por la tabla anual
 };
 export type Sim = {
   S: number; K: number; n: number; buf: Uint8Array; W: number;
@@ -81,14 +82,17 @@ export function loadSims(comp: string, S: number, K: number, n: number, asc = fa
   return cache.get(comp)!;
 }
 
-export type Extras = Partial<Record<"asc" | "title" | "playoffs" | "rel" | ReachKey, Float64Array>>;
+export type Extras = Partial<Record<"asc" | "title" | "playoffs" | "rel" | "lib" | "sud" | ReachKey, Float64Array>>;
 
 export type Scenario = {
   M: Float64Array;      // n×n, P(equipo t termina en la posición k)
   xpts: Float64Array;   // puntos finales esperados
   epos: Float64Array;   // posición esperada (1-based)
   probs: Float64Array;  // K×3, P(L, E, V) de cada partido dado el escenario
-  ex: Extras;           // ascenso; campeón del torneo, playoffs y descenso (Argentina)
+  ex: Extras;           // ascenso; campeón del torneo, playoffs, descenso y copas (Argentina)
+  zM?: Float64Array;    // Argentina: n×16, P(equipo t termina en el puesto k de su zona en el torneo en curso)
+  zx?: Float64Array;    // puntos esperados en el torneo en curso
+  zepos?: Float64Array; // puesto esperado en su zona (1-based)
   ess: number;          // tamaño efectivo de muestra (Σw)² / Σw²
   cnt: number;          // temporadas con peso > 0
 };
@@ -108,6 +112,9 @@ export function scenario(sim: Sim, fixed: Record<number, number>, hi: number[], 
   const ex: Extras = {};
   if (sim.asc) ex.asc = new Float64Array(n);
   if (split) { ex.title = new Float64Array(n); ex.playoffs = new Float64Array(n); if (split.promedios) ex.rel = new Float64Array(n); }
+  if (split?.cups) { ex.lib = new Float64Array(n); ex.sud = new Float64Array(n); }
+  const zM = split ? new Float64Array(n * 16) : undefined, zx = split ? new Float64Array(n) : undefined, zepos = split ? new Float64Array(n) : undefined;
+  const qd = new Uint8Array(n);
   const rkeys = Object.keys(REACH) as ReachKey[];
   if (sim.cup) for (const k of rkeys) ex[k] = new Float64Array(n);
   const qwin = sim.qwin, qtitle = sim.qtitle;
@@ -161,6 +168,23 @@ export function scenario(sim: Sim, fixed: Record<number, number>, hi: number[], 
       for (let t = 0; t < n; t++) {
         ex.playoffs![t] += w * (zn[t] < 8 ? 1 : 0);
         ex.title![t] += w * (zsame ? (zinfo[t] >> 4) & 1 : qtitle![t * 16 + zn[t]]);
+        zM![t * 16 + zn[t]] += w; zx![t] += w * zp[t]; zepos![t] += w * (zn[t] + 1);
+      }
+      if (split.cups) {
+        if (!changed) for (let t = 0; t < n; t++) { ex.lib![t] += w * ((zinfo[t] >> 6) & 1); ex.sud![t] += w * ((zinfo[t] >> 7) & 1); }
+        else {
+          // se recorre la tabla anual saltando a los ya clasificados (campeones conocidos y el del torneo
+          // en curso de esta simulación; si cambió su llave, se mantiene el campeón sorteado)
+          qd.fill(0); for (const f of split.cups.fixed) qd[f] = 1;
+          for (let t = 0; t < n; t++) if ((zinfo[t] >> 4) & 1) qd[t] = 1;
+          for (let t = 0; t < n; t++) if (qd[t]) ex.lib![t] += w;
+          let e = 0;
+          for (let r = 0; r < n; r++) {
+            const t = idx[r]; if (qd[t]) continue;
+            if (split.cups.lib.includes(e)) ex.lib![t] += w; else if (split.cups.sud.includes(e)) ex.sud![t] += w;
+            e++;
+          }
+        }
       }
       if (ex.rel) {
         if (!changed) for (let t = 0; t < n; t++) ex.rel[t] += w * ((zinfo[t] >> 5) & 1);
@@ -184,9 +208,10 @@ export function scenario(sim: Sim, fixed: Record<number, number>, hi: number[], 
     for (let i = 0; i < M.length; i++) M[i] /= sw;
     for (let t = 0; t < n; t++) { xpts[t] /= sw; epos[t] /= sw; }
     for (const a of Object.values(ex)) for (let t = 0; t < n; t++) a![t] /= sw;
+    if (zM) { for (let i = 0; i < zM.length; i++) zM[i] /= sw; for (let t = 0; t < n; t++) { zx![t] /= sw; zepos![t] /= sw; } }
     for (let k = 0; k < K; k++) { const z = probs[3 * k] + probs[3 * k + 1] + probs[3 * k + 2]; for (let c = 0; c < 3; c++) probs[3 * k + c] /= z || 1; }
   }
-  return { M, xpts, epos, probs, ex, ess: sw2 > 0 ? (sw * sw) / sw2 : 0, cnt };
+  return { M, xpts, epos, probs, ex, zM, zx, zepos, ess: sw2 > 0 ? (sw * sw) / sw2 : 0, cnt };
 }
 
 // Matriz base sin simulaciones (desde los JSON), para el primer render.

@@ -13,8 +13,10 @@ export type Team = {
     // solo con el modelo de dos latentes (tiros al arco y conversión frente a un rival promedio)
     sot_for?: number; conv_for?: number; sot_against?: number; conv_against?: number;
     league?: string | null;   // copas: liga doméstica del equipo (null si no la modelamos)
+    n_uefa?: number;          // copas: partidos UEFA en las últimas tres temporadas
   };
-  stage_probs?: number[];     // copas: P(termina en cada etapa), de la fase liga al título
+  stage_probs?: number[];
+  few_data?: boolean;         // copas: equipo sin liga modelada y con pocos partidos europeos recientes     // copas: P(termina en cada etapa), de la fase liga al título
   needs: {
     title?: NeedCurve; survival?: NeedCurve; promotion?: NeedCurve; playoffs?: NeedCurve; best_position?: number; worst_position?: number;
     top8?: NeedCurve; top24?: NeedCurve; champion?: NeedCurve;
