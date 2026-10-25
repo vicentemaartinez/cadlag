@@ -5,7 +5,7 @@ import { join } from "node:path";
 
 const base = (process.env.CADLAG_DATA_URL || "").replace(/\/$/, "");
 const dir = join(process.cwd(), "public", "data");
-const leagues = ["eng.1", "esp.1", "ita.1", "ger.1", "fra.1", "eng.2", "chi.1", "bra.1", "arg.1"];
+const leagues = ["eng.1", "esp.1", "ita.1", "ger.1", "fra.1", "eng.2", "chi.1", "bra.1", "arg.1", "uefa.champions"];
 
 if (!base) {
   try { await access(join(dir, "index.json")); console.log("CADLAG_DATA_URL no definida: se usan los datos locales de public/data"); process.exit(0); }

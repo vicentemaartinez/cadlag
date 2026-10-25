@@ -5,7 +5,8 @@ import { BASE } from "./leagues";
 //   q[3K]  P(L, E, V | fuerzas de esa temporada) como 255·√p (precisión relativa en p chicas)
 //   pts[n] puntos finales      pos[n] posición final (0-based); con ascenso, el bit 7 marca "asciende"
 // Argentina agrega zpts[n] (puntos del torneo en curso) y zinfo[n]: puesto en la zona (bits 0-3),
-// campeón del torneo (bit 4) y descenso (bit 5).
+// campeón del torneo (bit 4) y descenso (bit 5). Las copas agregan stage[n]: etapa alcanzada
+// (0 fase liga, 1 playoff, 2 octavos, 3 cuartos, 4 semis, 5 final, 6 campeón).
 export type SplitMeta = {
   zone: number[]; prev_pts: number[]; prev_games: number[]; games: number[]; promedios: boolean; tournament: string;
 };
@@ -15,15 +16,20 @@ export type Sim = {
   qwin: Float64Array | null;   // n×n: P(gana los playoffs de ascenso | equipo, posición)
   split: SplitMeta | null;
   qtitle: Float64Array | null; // n×16: P(campeón del torneo | equipo, puesto en su zona)
+  cup: boolean;
+  qstage: Float64Array | null; // n×n×7: P(llega al menos a la etapa k | equipo, puesto en la fase liga)
 };
 
 const cache = new Map<string, Promise<Sim>>();
 export const LAYOUT = "o[K] sqrtq[3K] pts[n] pos[n]";
-export const LAYOUTS = [LAYOUT, LAYOUT + " zpts[n] zinfo[n]"];
+export const LAYOUTS = [LAYOUT, LAYOUT + " zpts[n] zinfo[n]", LAYOUT + " stage[n]"];
+// columnas "llega al menos a": octavos, cuartos, semis, final, campeón
+export const REACH = { r16: 2, qf: 3, sf: 4, final: 5, champion: 6 } as const;
+export type ReachKey = keyof typeof REACH;
 // tabla de decodificación: byte → p
 const DEC = Float64Array.from({ length: 256 }, (_, b) => (b / 255) ** 2);
 
-export function loadSims(comp: string, S: number, K: number, n: number, asc = false, split: SplitMeta | null = null): Promise<Sim> {
+export function loadSims(comp: string, S: number, K: number, n: number, asc = false, split: SplitMeta | null = null, cup = false): Promise<Sim> {
   if (!cache.has(comp)) {
     cache.set(comp, (async () => {
       const res = await fetch(`${BASE}/data/${comp}.sims.gz`);
@@ -33,7 +39,7 @@ export function loadSims(comp: string, S: number, K: number, n: number, asc = fa
         const ds = new Response(new Blob([bytes]).stream().pipeThrough(new DecompressionStream("gzip")));
         bytes = new Uint8Array(await ds.arrayBuffer());
       }
-      const W = 4 * K + 2 * n + (split ? 2 * n : 0);
+      const W = 4 * K + 2 * n + (split ? 2 * n : 0) + (cup ? n : 0);
       let qwin: Float64Array | null = null, qtitle: Float64Array | null = null;
       if (asc) {
         const cnt = new Float64Array(n * n), win = new Float64Array(n * n);
@@ -54,13 +60,28 @@ export function loadSims(comp: string, S: number, K: number, n: number, asc = fa
         qtitle = new Float64Array(n * 16);
         for (let i = 0; i < n * 16; i++) qtitle[i] = cnt[i] ? win[i] / cnt[i] : 0;
       }
-      return { S, K, n, buf: bytes, W, asc, qwin, split, qtitle };
+      let qstage: Float64Array | null = null;
+      if (cup) {
+        // P(etapa ≥ k | equipo, puesto), encogida hacia la de cualquier equipo en ese puesto (50 simulaciones de peso)
+        const cnt = new Float64Array(n * n), hit = new Float64Array(n * n * 7), pc = new Float64Array(n), ph = new Float64Array(n * 7);
+        for (let s = 0; s < S; s++) for (let t = 0; t < n; t++) {
+          const p = bytes[s * W + 4 * K + n + t] & 0x7f, g = bytes[s * W + 4 * K + 2 * n + t];
+          cnt[t * n + p]++; pc[p]++;
+          for (let k = 0; k <= g; k++) { hit[(t * n + p) * 7 + k]++; ph[p * 7 + k]++; }
+        }
+        qstage = new Float64Array(n * n * 7);
+        for (let t = 0; t < n; t++) for (let p = 0; p < n; p++) for (let k = 0; k < 7; k++) {
+          const pooled = pc[p] ? ph[p * 7 + k] / pc[p] : 0;
+          qstage[(t * n + p) * 7 + k] = (hit[(t * n + p) * 7 + k] + 50 * pooled) / (cnt[t * n + p] + 50);
+        }
+      }
+      return { S, K, n, buf: bytes, W, asc, qwin, split, qtitle, cup, qstage };
     })());
   }
   return cache.get(comp)!;
 }
 
-export type Extras = Partial<Record<"asc" | "title" | "playoffs" | "rel", Float64Array>>;
+export type Extras = Partial<Record<"asc" | "title" | "playoffs" | "rel" | ReachKey, Float64Array>>;
 
 export type Scenario = {
   M: Float64Array;      // n×n, P(equipo t termina en la posición k)
@@ -87,6 +108,8 @@ export function scenario(sim: Sim, fixed: Record<number, number>, hi: number[], 
   const ex: Extras = {};
   if (sim.asc) ex.asc = new Float64Array(n);
   if (split) { ex.title = new Float64Array(n); ex.playoffs = new Float64Array(n); if (split.promedios) ex.rel = new Float64Array(n); }
+  const rkeys = Object.keys(REACH) as ReachKey[];
+  if (sim.cup) for (const k of rkeys) ex[k] = new Float64Array(n);
   const qwin = sim.qwin, qtitle = sim.qtitle;
   const flag = new Uint8Array(n);
   const keys = Object.keys(fixed).map(Number), vals = keys.map((k) => fixed[k]);
@@ -116,6 +139,13 @@ export function scenario(sim: Sim, fixed: Record<number, number>, hi: number[], 
       for (let r = 0; r < n; r++) pos[idx[r]] = r;
     } else pos.set(orig);
     for (let t = 0; t < n; t++) { M[t * n + pos[t]] += w; xpts[t] += w * pts[t]; epos[t] += w * (pos[t] + 1); }
+    if (sim.cup) {
+      // misma etapa si el puesto no cambió; si cambió, P(etapa | equipo, nuevo puesto)
+      for (let t = 0; t < n; t++) {
+        const g = buf[o + 4 * K + 2 * n + t];
+        for (const k of rkeys) ex[k]![t] += w * (pos[t] === orig[t] ? (g >= REACH[k] ? 1 : 0) : sim.qstage![(t * n + pos[t]) * 7 + REACH[k]]);
+      }
+    }
     if (ex.asc) {
       let same = true; for (let t = 0; t < n && same; t++) same = pos[t] === orig[t];
       for (let t = 0; t < n; t++) ex.asc[t] += w * (same ? flag[t] : pos[t] < 2 ? 1 : qwin![t * n + pos[t]]);

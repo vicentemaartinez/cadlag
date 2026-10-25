@@ -19,6 +19,10 @@ Mapa del repositorio para quien quiera leerlo o extenderlo.
 | `model/filter_shots.py` | Tiros al arco como segunda medición del estado |
 | `model/filter_shots2.py` | **Modelo oficial**: dos latentes, crear y evitar tiros al arco y convertirlos (NegBin adelgazada), mismo filtro y ajuste |
 | `model/engine.py` | Motor por liga: el oficial, salvo que `models/model_selection.json` devuelva una liga al núcleo |
+| `model/europe.py` | Capa europea: fuerzas de todos los clubes UEFA en una escala común (fuerza doméstica + offset de liga + residuo europeo; estado propio para los equipos sin liga modelada), filtro factorizado |
+| `sim/ucl.py` | Champions con fase liga: tabla de 36 con los desempates del reglamento, playoff, cuadro fijo, cruces y resultados ya conocidos |
+| `sim/ucl_groups.py` | Champions con fase de grupos (hasta 2023-24), solo para validar |
+| `cup.py` | Pronóstico de copas: fuerzas, simulación, "¿qué necesita?" en la fase liga y JSON del sitio |
 | `sim/rare.py` | Eventos raros por muestreo por importancia (fuerza + resultados inclinados) |
 | `data/transfers.py` | Traspasos de Transfermarkt (top 5, 2009-2025) ubicados en los ids de ESPN |
 | `model/inplay.py` | Proceso de conteo en vivo (marcador, rojas, descuentos), Hawkes, Kolmogorov hacia adelante |
@@ -78,4 +82,6 @@ python scripts/market_prior_analysis.py        # mercado de pases en la pretempo
 python scripts/transfer_edges_analysis.py      # traspasos como aristas entre ligas
 python scripts/tournament_backtest.py          # Argentina: campeones y playoffs de cada torneo
 python scripts/shots2_norel_fit.py eng.2:2016  # Championship: prior propio de los descendidos
+python scripts/europe_fit.py                   # capa europea: ajuste fuera de muestra (2011-17), prueba (2018-26) y producción
+python scripts/ucl_backtest.py                 # Champions 2018-19 a 2025-26: etapa alcanzada y campeón
 ```

@@ -200,13 +200,22 @@ def forecast_league(comp: str, matches=None, teams=None, n_sims=20000, refit=Fal
     )
 
 
-def forecast(comps=None, n_sims=20000, refit=False) -> list[dict]:
-    comps = comps or CORE_LEAGUES
+def forecast(comps=None, n_sims=20000, refit=False, cups=None) -> list[dict]:
+    from .cup import CUPS, forecast_cup
+    comps = CORE_LEAGUES if comps is None else comps
+    cups = list(CUPS) if cups is None else cups
     matches, teams = store.load()
     WEB.mkdir(parents=True, exist_ok=True)
     index = []
-    for c in comps:
-        f = forecast_league(c, matches, teams, n_sims=n_sims, refit=refit)
+    for c in list(comps) + list(cups):
+        try:
+            f = (forecast_cup(c, matches, teams, n_sims=n_sims) if c in CUPS
+                 else forecast_league(c, matches, teams, n_sims=n_sims, refit=refit))
+        except Exception as e:   # una copa sin fixture (fuera de temporada) no frena las ligas
+            if c in CUPS:
+                print(f"{c}: sin pronóstico ({e})", flush=True)
+                continue
+            raise
         (WEB / f"{c}.json").write_text(json.dumps(f, ensure_ascii=False, default=float))
         index.append({k: f[k] for k in ("comp", "name", "country", "season_label", "generated_at",
                                         "matches_played", "matches_total")})

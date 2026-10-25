@@ -21,7 +21,7 @@ const themeScript = `(function(){var d=document.documentElement;try{var k=localS
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   const idx = getIndex(); const G = getGlobal();
-  const summary = idx.leagues.map((l) => { const v = (t: (typeof l.teams)[number]) => t.asc ?? t.title ?? t.p[0]; let b = l.teams[0]; for (const t of l.teams) if (v(t) > v(b)) b = t; return { comp: l.comp, fav: b.name, p: v(b) }; });
+  const summary = idx.leagues.map((l) => { const v = (t: (typeof l.teams)[number]) => t.asc ?? t.title ?? t.champion ?? t.p[0]; let b = l.teams[0]; for (const t of l.teams) if (v(t) > v(b)) b = t; return { comp: l.comp, fav: b.name, p: v(b) }; });
   const gen = new Date().toLocaleDateString("es-CL", { day: "numeric", month: "long", year: "numeric" });
   return (
     <html lang="es" data-theme="light" suppressHydrationWarning>

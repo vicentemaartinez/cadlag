@@ -20,7 +20,7 @@ export default function Home() {
         <h1 className="hero-word">càdlàg</h1>
         <div className="hero-row">
           <p className="hero-lead">Dónde termina cada equipo, simulando {(idx.leagues[0]?.S ?? 20000).toLocaleString("es-CL")} veces lo que queda de cada liga.</p>
-          <p className="hero-meta">Nueve ligas · actualizado el {upd}</p>
+          <p className="hero-meta">Nueve ligas{idx.leagues.some((l) => l.comp === "uefa.champions") ? " y la Champions" : ""} · actualizado el {upd}</p>
         </div>
       </header>
 
@@ -47,6 +47,7 @@ export default function Home() {
               <li><b className="tnum">{fmt(m - b, 4)}</b><span>de RPS detrás de Bet365 en la Premier desde 2016. Las frecuencias históricas quedan a {fmt(h - b, 4)}.</span></li>
               <li><b className="tnum">+0,004</b><span>de log-verosimilitud por partido en las nueve ligas al separar crear tiros al arco de convertirlos.</span></li>
               <li><b className="tnum">×2,03</b><span>de varianza perdida si se fijan las fuerzas en vez de sortearlas.</span></li>
+              <li><b className="tnum">+0,018</b><span>de log-verosimilitud por partido UEFA al anclar cada equipo a la fuerza que muestra en su liga.</span></li>
               <li><b className="tnum">0,017</b><span>de conectividad entre ligas: Europa y Sudamérica casi no se tocan.</span></li>
             </ul>
           </div>

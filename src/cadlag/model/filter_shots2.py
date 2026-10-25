@@ -171,7 +171,10 @@ def make_filter(N):
             z, Sig, _ = _laplace(zbar, S, lambda z: _gf(z, x, y, *a), lambda z: _hf(z, x, y, *a), lambda z: loglik_full(z, x, y, *a))
             K = P @ A.T @ jnp.linalg.inv(S)
             m = m + K @ (z - zbar); P = P + K @ (Sig - S) @ K.T; P = 0.5 * (P + P.T)
-            out = dict(zbar=zbar, S=S, logp_goals=logp_g)
+            # estado filtrado (a, b, f, g) de cada equipo tras el partido: lo usa la capa europea
+            ih = jnp.array([0, N, 2 * N, 3 * N]) + inp["hi"]; ia = jnp.array([0, N, 2 * N, 3 * N]) + inp["ai"]
+            out = dict(zbar=zbar, S=S, logp_goals=logp_g, hm=m[ih], hP=P[jnp.ix_(ih, ih)], am=m[ia], aP=P[jnp.ix_(ia, ia)],
+                       phi=m[4 * N + 2])
             if n_ckpt:
                 c = inp["ckpt"]; cc = jnp.maximum(c, 0)
                 Mb = Mb.at[cc].set(jnp.where(c >= 0, m, Mb[cc])); Pb = Pb.at[cc].set(jnp.where(c >= 0, P, Pb[cc]))

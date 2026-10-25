@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useCallback, useEffect, useRef, useState } from "react";
 import Glyph from "./Glyph";
-import { EUROPE, LEAGUES, NAMES, SOUTH, leagueHref } from "@/lib/leagues";
+import { CUPS, EUROPE, LEAGUES, NAMES, SOUTH, leagueHref } from "@/lib/leagues";
 import { fmt, pct } from "@/lib/format";
 import { THEME_EVENT, reloadHeat } from "@/lib/heat";
 
@@ -54,7 +54,7 @@ export default function Nav({ summary, topTeam, lambda2 }: { summary: NavSummary
     <div className="mg-col"><span className="label mg" style={{ ["--i" as string]: i }}>{label}</span>{kids}</div>
   );
   const panels: Record<Panel, React.ReactNode> = {
-    ligas: <>{col("Europa", 0, EUROPE.filter(has).map((c, i) => L(c, i + 1)))}{col("Sudamérica", 1, SOUTH.filter(has).map((c, i) => L(c, i + 2)))}</>,
+    ligas: <>{col("Europa", 0, EUROPE.filter(has).map((c, i) => L(c, i + 1)))}{col("Sudamérica", 1, SOUTH.filter(has).map((c, i) => L(c, i + 2)))}{CUPS.some(has) && col("Copas", 2, CUPS.filter(has).map((c, i) => L(c, i + 3)))}</>,
     modelo: <>
       {col("Cómo funciona", 0, [A("/#metodo", 1, "De los goles a la tabla", "4 pasos"), A("/#trayectoria", 2, "Una temporada", "Chile 2026")])}
       {col("Qué tan bien predice", 1, [A("/#resultados", 2, "Resultados", "contra Bet365"), A("/#resultados", 3, "Lo que no estaba", "4 hipótesis")])}

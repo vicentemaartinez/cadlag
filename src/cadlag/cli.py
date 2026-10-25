@@ -32,7 +32,11 @@ def main(argv=None):
     ap.add_argument("--site-sims", type=int, default=20000, help="temporadas simuladas para el laboratorio")
     ap.add_argument("--remote", action="store_true", help="estado y datos del sitio en Supabase Storage")
     a = ap.parse_args(argv)
-    comps = a.comps or CORE_LEAGUES
+    from .cup import CUPS
+    # ligas y copas pronosticadas: sin argumentos, todas; con argumentos, las nombradas
+    cups = [c for c in a.comps if c in CUPS] if a.comps else list(CUPS)
+    comps = [c for c in a.comps if c not in CUPS] if a.comps else CORE_LEAGUES
+    a.cups = cups
 
     if a.cmd == "build":
         from .data import store
@@ -41,7 +45,7 @@ def main(argv=None):
         print(f"{len(m)} partidos, {len(t)} equipos")
     elif a.cmd == "update":
         from .data import store
-        ch = store.update(comps + ([] if a.comps else CUP_COMPETITIONS), days_back=a.days_back, months=a.months)
+        ch = store.update(a.comps or (CORE_LEAGUES + CUP_COMPETITIONS), days_back=a.days_back, months=a.months)
         print(f"{len(ch)} partidos nuevos o actualizados")
     elif a.cmd == "run":
         run(comps, a)
@@ -58,13 +62,13 @@ def main(argv=None):
             Engine(m, c, refit=True)
     elif a.cmd == "forecast":
         from .pipeline import forecast
-        forecast(comps, n_sims=a.sims)
+        forecast(comps, n_sims=a.sims, cups=cups)
 
 
 def site(comps, a, trajectory=True):
     from . import export
     print("exportando al sitio", flush=True)
-    export.export_sims(S=a.site_sims, comps=comps)
+    export.export_sims(S=a.site_sims, comps=comps, cups=a.cups)
     if trajectory:
         export.export_trajectory("chi.1")
     export.export_web()
@@ -81,15 +85,15 @@ def run(comps, a):
     changed_comps: set[str] = set()
     if not a.no_update:
         ch = store.update(comps + CUP_COMPETITIONS, days_back=a.days_back, months=a.months)
-        changed_comps = set(ch["comp"]) & set(comps) if len(ch) else set()
-        print(f"{len(ch)} partidos nuevos o actualizados; ligas núcleo afectadas: {sorted(changed_comps) or 'ninguna'}", flush=True)
+        changed_comps = set(ch["comp"]) & (set(comps) | set(a.cups)) if len(ch) else set()
+        print(f"{len(ch)} partidos nuevos o actualizados; ligas y copas afectadas: {sorted(changed_comps) or 'ninguna'}", flush=True)
         if a.remote and len(ch):
             remote.push_state()  # también los cambios de copas o fixtures, aunque no se re-simule
     if not changed_comps and not a.force:
         print("sin cambios: no se re-simula")
         return
     from .pipeline import forecast
-    forecast(comps, n_sims=a.sims)
+    forecast(comps, n_sims=a.sims, cups=a.cups)
     site(comps, a, trajectory=a.force or "chi.1" in changed_comps)
     if a.remote:
         remote.push_site()

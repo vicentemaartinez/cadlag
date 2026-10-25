@@ -36,9 +36,11 @@ LAYOUT = "o[K] sqrtq[3K] pts[n] pos[n]"   # bytes por temporada simulada (ver do
 # Argentina: además los puntos del torneo en curso y, en un byte, el puesto en la zona (bits 0-3), si
 # sale campeón (bit 4) y si desciende (bit 5).
 LAYOUT_SPLIT = LAYOUT + " zpts[n] zinfo[n]"
+# copas: además la etapa alcanzada (0 fase liga, 1 playoff, 2 octavos, 3 cuartos, 4 semis, 5 final, 6 campeón)
+LAYOUT_CUP = LAYOUT + " stage[n]"
 
 
-def export_sims(S: int = 20000, K: int = 10, comps=None, seed: int = 7) -> dict:
+def export_sims(S: int = 20000, K: int = 10, comps=None, seed: int = 7, cups=None) -> dict:
     """Por temporada simulada, en bytes: el resultado sorteado de los próximos K partidos (0/1/2),
     P(L, E, V) de esos partidos dadas las fuerzas de esa temporada (como 255·√p, para tener precisión
     relativa en probabilidades chicas), los puntos finales y la
@@ -48,7 +50,7 @@ def export_sims(S: int = 20000, K: int = 10, comps=None, seed: int = 7) -> dict:
     from .model.engine import Engine
     m, _ = store.load()
     out = {}
-    for comp in comps or CORE_LEAGUES:
+    for comp in (CORE_LEAGUES if comps is None else comps):
         league = LEAGUES[comp]
         f = json.loads((WEB / f"{comp}.json").read_text())
         eng = Engine(m, comp, verbose=False)
@@ -91,6 +93,26 @@ def export_sims(S: int = 20000, K: int = 10, comps=None, seed: int = 7) -> dict:
                       **({"split": split} if split else {}), fixtures=fixtures, b64=base64.b64encode(gzip.compress(blob, 9)).decode()),
         )
         print(f"  sims {comp}: {S} temporadas, {k} partidos fijables", flush=True)
+    from . import cup as cupm
+    for comp in (list(cupm.CUPS) if cups is None else cups):
+        p = WEB / f"{comp}.json"
+        if not p.exists():
+            continue
+        f = json.loads(p.read_text())
+        if comp not in cupm._CACHE:      # `cadlag site` sin pronóstico previo en este proceso
+            cupm.forecast_cup(comp, m, store.load()[1], n_sims=S)
+        blob, k, order, fixtures = cupm.sims_blob(comp, K)
+        Sc = cupm._CACHE[comp][2]["pos"].shape[0]
+        out[comp] = dict(
+            meta={k2: f[k2] for k2 in ("comp", "name", "country", "season_label", "matches_played", "matches_total",
+                                        "zones", "suspense", "last_result")},
+            order=order, teams=f["teams"], upcoming=[], decisive=f["decisive_matches"],
+            model=dict(home_advantage=f["model"]["home_advantage"], goal_level=f["model"]["goal_level"],
+                       offsets=f["model"]["offsets"]),
+            sims=dict(S=Sc, K=k, n=len(order), layout=LAYOUT_CUP, cup=True, fixtures=fixtures,
+                      b64=base64.b64encode(gzip.compress(blob, 9)).decode()),
+        )
+        print(f"  sims {comp}: {Sc} ediciones, {k} partidos fijables", flush=True)
     an = store.ROOT / "outputs" / "analysis"
     g = json.loads((WEB / "global.json").read_text())
     graph = [dict(a=a, b=b, w=int(w)) for a, b, w in pd.read_csv(an / "crossleague_graph.csv")[["a", "b", "w"]].itertuples(index=False)]
@@ -165,7 +187,8 @@ def export_web() -> None:
     data = json.loads((WEB / "sims_data.json").read_text())
     r4 = lambda x: round(float(x), 4)  # noqa: E731
     index = []
-    for c in CORE_LEAGUES:
+    from .cup import CUPS, REACH
+    for c in CORE_LEAGUES + [x for x in CUPS if x in data]:
         d = data[c]
         sims = d["sims"]
         gz = base64.b64decode(sims["b64"])
@@ -188,15 +211,26 @@ def export_web() -> None:
                 t["zones"]["title"] = r4(((z[:, i] >> 4) & 1).mean())
                 t["zones"]["playoffs"] = r4(((z[:, i] & 0x0F) < 8).mean())
                 t["zones"]["relegated"] = r4(((z[:, i] >> 5) & 1).mean())
+        if sims.get("cup"):   # etapas de la copa desde las mismas simulaciones
+            n_ = sims["n"]; b = np.frombuffer(raw, np.uint8).reshape(sims["S"], -1)
+            stg = b[:, 4 * sims["K"] + 2 * n_:4 * sims["K"] + 3 * n_]
+            for i, tid in enumerate(d["order"]):
+                t = next(x for x in d["teams"] if x["id"] == tid)
+                for key, v in REACH.items():
+                    t["zones"][key] = r4((stg[:, i] >= v).mean())
+                for z in d["meta"]["zones"]:
+                    t["zones"][z["key"]] = r4(sum(t["position_probs"][p - 1] for p in z["positions"]))
+                t["stage_probs"] = [r4((stg[:, i] == k).mean()) for k in range(7)]
         league = dict(meta=d["meta"], order=d["order"], teams=d["teams"], upcoming=d["upcoming"], decisive=d["decisive"],
                       model=d["model"], sims={k: v for k, v in sims.items() if k != "b64"})
         (SITE / f"{c}.json").write_text(json.dumps(league, ensure_ascii=False, separators=(",", ":")))
         mt = d["meta"]
-        index.append(dict(comp=c, season_label=mt["season_label"], matches_played=mt["matches_played"],
+        index.append(dict(comp=c, season_label=mt["season_label"], **({"cup": True} if sims.get("cup") else {}), matches_played=mt["matches_played"],
                           matches_total=mt["matches_total"], last_result=mt["last_result"], S=sims["S"],
                           teams=[dict(id=t["id"], name=t["name"], p=t["position_probs"],
                                       **({"asc": t["zones"]["promoted"]} if "promoted" in t["zones"] else {}),
-                                      **({"title": t["zones"]["title"]} if "title" in t["zones"] else {}))
+                                      **({"title": t["zones"]["title"]} if "title" in t["zones"] else {}),
+                                      **({"champion": t["zones"]["champion"]} if sims.get("cup") else {}))
                                  for t in d["teams"]]))
     (SITE / "index.json").write_text(json.dumps(dict(leagues=index, backtest=data.get("_backtest", {})),
                                                 ensure_ascii=False, separators=(",", ":")))

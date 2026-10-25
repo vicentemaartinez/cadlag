@@ -99,7 +99,7 @@ export default function Flow({ leagues }: { leagues: IndexLeague[] }) {
     <section className="wrap" id="ligas" style={{ paddingTop: 0 }}>
       <div className="flow" ref={host} tabIndex={0} role="listbox" aria-label="Ligas">
         {leagues.map((l, i) => {
-          const v = (t: (typeof l.teams)[number]) => t.asc ?? t.title ?? t.p[0]; const up = l.teams[0].asc != null, tor = l.teams[0].title != null;
+          const v = (t: (typeof l.teams)[number]) => t.asc ?? t.title ?? t.champion ?? t.p[0]; const up = l.teams[0].asc != null, tor = l.teams[0].title != null, cup = !!l.cup;
           let f = l.teams[0]; for (const t of l.teams) if (v(t) > v(f)) f = t;
           const [r, R] = rounds(l.matches_played, l.matches_total, l.teams.length);
           return (
@@ -107,7 +107,7 @@ export default function Flow({ leagues }: { leagues: IndexLeague[] }) {
               <div className="top"><span>{COUNTRY[l.comp]} · {l.season_label}</span><span className="r"><span className="when tnum">fecha {r} de {R}</span><span className="open">Abrir →</span></span></div>
               <h3>{NAMES[l.comp]}</h3>
               <canvas aria-hidden="true" />
-              <div className="fav"><div className="nm">{f.name}<small>{up ? "favorito al ascenso" : tor ? "favorito al torneo" : "favorito al título"}</small></div><div className="p tnum">{pct(v(f), 0)}<small style={{ fontSize: ".5em" }}> %</small></div></div>
+              <div className="fav"><div className="nm">{f.name}<small>{up ? "favorito al ascenso" : tor ? "favorito al torneo" : cup ? "favorito a ganarla" : "favorito al título"}</small></div><div className="p tnum">{pct(v(f), 0)}<small style={{ fontSize: ".5em" }}> %</small></div></div>
             </Link>
           );
         })}

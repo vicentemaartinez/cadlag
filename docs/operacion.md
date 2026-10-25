@@ -9,7 +9,7 @@ GitHub Actions (`.github/workflows/update.yml`) corre `cadlag run --remote` cada
 1. descarga el almacén de partidos desde Supabase Storage (bucket privado `cadlag-state`);
 2. trae de ESPN los resultados de los últimos 3 días, con tiros al arco (y completa días de los
    últimos dos meses a los que les falten);
-3. si cambió alguna liga núcleo, re-simula, sube los datos del sitio al bucket público
+3. si cambió alguna liga núcleo o la Champions, re-simula, sube los datos del sitio al bucket público
    `cadlag-data` y llama al deploy hook de Vercel, que vuelve a compilar el sitio descargando
    esos datos (`site/scripts/fetch-data.mjs`).
 
@@ -38,9 +38,18 @@ Configuración (una vez):
   `src/cadlag/leagues.py` (`POINT_ADJUSTMENTS`). Cuando la EFL anuncie uno nuevo, se agrega ahí.
 - Promedios de Argentina: los puntos y partidos de las dos temporadas anteriores van en
   `PROMEDIO_BASE` (mismo archivo); para 2026 vienen de la tabla oficial; desde 2027 se calculan solos con los datos.
+- Champions League (`src/cadlag/sim/ucl.py`), tres datos a mano:
+  - `MISSING_FIXTURES`: partidos de la fase liga que ESPN no trae (en 2026-27 faltaban cinco). Se
+    agregan con fecha y nombres; si después aparecen en los datos, se ignoran solos.
+  - `BRACKET_HALVES`: cuando se sortea el cuadro (después del playoff), en qué mitad quedó el 3.º, el
+    5.º y el 7.º de la fase liga (0 = la del 1.º, 1 = la del 2.º). Sin el dato se sortea en cada
+    simulación hasta que los cuartos aparecen en los datos.
+  - `FINAL_HOST`: el club dueño del estadio de la final, si juega la Champions (2027: Atlético).
+- Capa europea: los hiperparámetros están en `models/europe_h.npy`. Se reajustan con
+  `python scripts/europe_fit.py` (unos 10 minutos); no hace falta hacerlo cada temporada.
 
 ## Notas
 
 - En repositorios públicos GitHub desactiva los flujos programados tras 60 días sin commits; si el
   sitio deja de actualizarse, se reactiva en Actions → "actualizar datos".
-- Una actualización completa (nueve ligas, con las curvas de "¿Qué necesita?") toma unos 15 minutos.
+- Una actualización completa (nueve ligas y la Champions, con las curvas de "¿Qué necesita?") toma unos 17 minutos.

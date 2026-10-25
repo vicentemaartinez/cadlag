@@ -9,8 +9,9 @@ export function generateStaticParams() { return availableLeagues().map((c) => ({
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const comp = COMP_OF[(await params).slug]; const D = getLeague(comp);
-  let b = D.teams[0]; for (const t of D.teams) if (t.position_probs[0] > b.position_probs[0]) b = t;
-  return { title: NAMES[comp], description: `${NAMES[comp]} ${D.meta.season_label}: ${b.name} sale campeón en el ${Math.round(b.position_probs[0] * 100)} % de ${D.sims.S.toLocaleString("es-CL")} temporadas simuladas.` };
+  const v = (t: (typeof D.teams)[number]) => (D.sims.cup ? t.zones.champion ?? 0 : t.position_probs[0]);
+  let b = D.teams[0]; for (const t of D.teams) if (v(t) > v(b)) b = t;
+  return { title: NAMES[comp], description: `${NAMES[comp]} ${D.meta.season_label}: ${b.name} sale campeón en el ${Math.round(v(b) * 100)} % de ${D.sims.S.toLocaleString("es-CL")} ${D.sims.cup ? "ediciones" : "temporadas"} simuladas.` };
 }
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {

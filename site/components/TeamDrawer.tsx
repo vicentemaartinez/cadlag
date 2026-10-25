@@ -1,19 +1,20 @@
 "use client";
 import { useEffect, useRef, useState } from "react";
 import type { League } from "@/lib/types";
-import { NAMES } from "@/lib/leagues";
+import { LNAME, NAMES } from "@/lib/leagues";
 import { fmt } from "@/lib/format";
 import { heat } from "@/lib/heat";
 import type { Extras } from "@/lib/sims";
 
-type Need = "title" | "promotion" | "playoffs" | "survival";
+type Need = "title" | "promotion" | "playoffs" | "survival" | "top8" | "top24" | "champion";
+const STAGES = ["Fase liga", "Top 24", "Octavos", "Cuartos", "Semifinal", "Final", "Campeón"];
 
 // Cajón de equipo: posición final, fuerza estimada y qué necesita para el título o para salvarse.
 export default function TeamDrawer({ D, t, M, ex, onClose }: { D: League; t: number | null; M: Float64Array; ex: Extras; onClose: () => void }) {
   const [need, setNeed] = useState<Need>("title");
-  const hasAsc = !!D.sims.asc, split = D.sims.split ?? null;
+  const hasAsc = !!D.sims.asc, split = D.sims.split ?? null, cup = !!D.sims.cup;
   // objetivos según la liga: ascenso (Championship), playoffs y campeón del torneo (Argentina)
-  const tabs: [Need, string][] = hasAsc ? [["promotion", "Ascenso"], ["title", "Título"], ["survival", "Salvarse"]]
+  const tabs: [Need, string][] = cup ? [["top8", "Top 8"], ["top24", "Top 24"], ["champion", "Campeón"]] : hasAsc ? [["promotion", "Ascenso"], ["title", "Título"], ["survival", "Salvarse"]]
     : split ? [["playoffs", "Playoffs"], ["title", "Campeón"], ["survival", "Salvarse"]] : [["title", "Título"], ["survival", "Salvarse"]];
   const close = useRef<HTMLButtonElement>(null);
   const open = t !== null; const n = D.order.length;
@@ -47,10 +48,10 @@ export default function TeamDrawer({ D, t, M, ex, onClose }: { D: League; t: num
           const c = nd[need]?.curve || [];
           if (c.length) left = c[c.length - 1][0];   // en Argentina, título y playoffs cuentan solo el torneo en curso
           const n50 = nd[need]?.points_for_50 ?? null, n90 = nd[need]?.points_for_90 ?? null;
-          const goal = need === "title" ? "sale campeón" : need === "promotion" ? "asciende" : need === "playoffs" ? "clasifica a los playoffs" : "se salva";
+          const goal = need === "top8" ? "termina entre los 8 primeros" : need === "top24" ? "sigue en carrera (top 24)" : need === "champion" ? "gana la copa" : need === "title" ? "sale campeón" : need === "promotion" ? "asciende" : need === "playoffs" ? "clasifica a los playoffs" : "se salva";
           const sentence = () => {
             if (!c.length) return null;
-            if (n50 == null) return `Aunque gane todo lo que le queda, ${goal} en menos de la mitad de las simulaciones.`;
+            if (n50 == null) return `Aunque gane todo lo que le queda, ${goal} en menos de la mitad de las simulaciones.${need === "champion" ? " La fase liga solo ordena el cuadro: el título se juega en las llaves." : ""}`;
             const first = n50 === 0 ? `Sin sumar más puntos ya ${goal} en la mitad de las simulaciones` : `Si suma ${n50} de los ${left} puntos que le quedan, ${goal} en la mitad de las simulaciones`;
             const second = n90 == null ? "." : n90 === n50 ? ", y en nueve de cada diez." : `; con ${n90}, en nueve de cada diez.`;
             return first + second;
@@ -76,17 +77,31 @@ export default function TeamDrawer({ D, t, M, ex, onClose }: { D: League; t: num
               <button className="icon-btn x" type="button" ref={close} onClick={onClose} aria-label="Cerrar">
                 <svg viewBox="0 0 20 20" aria-hidden="true"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" /></svg>
               </button>
-              <span className="label">{NAMES[D.meta.comp]} · {T.points} pts en {T.played} partidos{T.adj ? ` (descuento de ${-T.adj})` : ""}{hasAsc && ex.asc ? ` · ${fmt(ex.asc[t!] * 100, 1)} % de ascender` : ""}{split && ex.title ? ` · zona ${T.zone} · ${fmt(ex.title[t!] * 100, 1)} % de ganar el ${split.tournament}` : ""}</span>
+              <span className="label">{NAMES[D.meta.comp]} · {T.points} pts en {T.played} partidos{cup && ex.champion ? ` · ${fmt(ex.champion[t!] * 100, 1)} % de ganarla` : ""}{T.adj ? ` (descuento de ${-T.adj})` : ""}{hasAsc && ex.asc ? ` · ${fmt(ex.asc[t!] * 100, 1)} % de ascender` : ""}{split && ex.title ? ` · zona ${T.zone} · ${fmt(ex.title[t!] * 100, 1)} % de ganar el ${split.tournament}` : ""}</span>
               <h2 id="d-name" style={{ marginTop: 10 }}>{T.name}</h2>
               <div className="chips">{chips}</div>
-              <div className="dsec"><span className="label">Distribución de la posición final</span>
+              <div className="dsec"><span className="label">{cup ? "Puesto en la fase liga" : "Distribución de la posición final"}</span>
                 <div className="dist">{probs.map((p, k) => <div key={k} title={`${k + 1}.º: ${fmt(p * 100, 1)} %`} style={{ height: `${(p / pmax) * 100}%`, animationDelay: `${k * 18}ms`, background: heat(p) }} />)}</div>
                 <div className="dist-ax">{probs.map((_, k) => <span key={k}>{k + 1}</span>)}</div>
               </div>
-              <div className="dsec"><span className="label">Fuerza estimada</span>
+              {cup && T.stage_probs && (() => {
+                const reach = STAGES.map((_, k) => T.stage_probs!.slice(k).reduce((a, b) => a + b, 0));
+                return (
+                  <div className="dsec"><span className="label">Hasta dónde llega</span>
+                    {STAGES.slice(1).map((lab, j) => { const v = reach[j + 1]; return (
+                      <div className="iv-row" key={lab}><span>{lab}</span>
+                        <div className="iv-track"><span className="ci" style={{ left: 0, width: `${v * 100}%`, background: heat(v) }} /></div>
+                        <span className="tnum" style={{ fontSize: 12.5, textAlign: "right" }}>{fmt(v * 100, 1)} %</span>
+                      </div>); })}
+                  </div>
+                );
+              })()}
+              <div className="dsec"><span className="label">Fuerza estimada{cup ? " (escala común: 0 es un rival promedio de la Premier)" : ""}</span>
                 {iv("Ataque", R.attack, R.attack_sd)}{iv("Defensa", R.defense, R.defense_sd)}
                 <p className="note" style={{ marginTop: 10 }}>
-                  {R.sot_for != null
+                  {cup
+                    ? <>Contra un rival promedio de la Premier en cancha neutral: {fmt(R.xgf_neutral, 2)} goles a favor y {fmt(R.xga_neutral, 2)} en contra. {R.league ? `Su fuerza sale de la ${LNAME[R.league] ?? R.league} más el nivel de esa liga en Europa.` : "Su liga no está modelada: la fuerza sale solo de sus partidos europeos."}</>
+                    : R.sot_for != null
                     ? <>Contra un rival promedio en cancha neutral: {fmt(R.sot_for, 1)} tiros al arco con {fmt((R.conv_for ?? 0) * 100, 0)} % de conversión, {fmt(R.xgf_neutral, 2)} goles a favor; recibe {fmt(R.sot_against ?? 0, 1)} tiros al arco y le convierten el {fmt((R.conv_against ?? 0) * 100, 0)} %, {fmt(R.xga_neutral, 2)} en contra.</>
                     : <>Contra un rival promedio en cancha neutral: {fmt(R.xgf_neutral, 2)} goles a favor y {fmt(R.xga_neutral, 2)} en contra.</>}
                 </p>

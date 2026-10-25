@@ -1,15 +1,16 @@
 # càdlàg
 
-**Dónde termina cada equipo.** Probabilidades de la posición final en nueve ligas de fútbol,
-calculadas con un modelo bayesiano dinámico de goles y tiros al arco y 20.000 temporadas simuladas
-con las reglas reales de cada liga.
+**Dónde termina cada equipo.** Probabilidades de la posición final en nueve ligas de fútbol y
+de hasta dónde llega cada equipo en la Champions League, calculadas con un modelo bayesiano
+dinámico de goles y tiros al arco y 20.000 temporadas simuladas con las reglas reales de cada
+competición.
 
 **→ [cadlag.vercel.app](https://cadlag.vercel.app)**
 
 ![Matriz de posiciones finales de la Premier League con el laboratorio "¿Y si…?"](docs/img/matriz.png)
 
 Premier League, LaLiga, Serie A, Bundesliga, Ligue 1, Championship, Liga de Primera (Chile),
-Brasileirão y Liga Profesional argentina, actualizadas cada dos horas.
+Brasileirão, Liga Profesional argentina y Champions League, actualizadas cada dos horas.
 
 ## Qué tiene de interesante
 
@@ -24,10 +25,14 @@ Brasileirão y Liga Profesional argentina, actualizadas cada dos horas.
   Championship, zonas, llaves y promedios del fútbol argentino, descuentos de puntos.
 - **"¿Y si…?" en el navegador.** Fijar resultados repondera las 20.000 temporadas sin volver
   a simular.
+- **Una escala común para Europa.** En la Champions, cada equipo de las cinco grandes ligas
+  parte de su fuerza doméstica más el nivel de su liga en Europa; los demás se estiman solo con
+  sus partidos europeos. Anclar a la liga mejora la predicción de los partidos UEFA fuera de
+  muestra.
 - **Ligas comparadas como una red eléctrica.** Los partidos de copa y los ascensos forman un grafo;
   su laplaciano da la fuerza relativa de cada liga y cuánta información las conecta.
 
-La formulación, las demostraciones y todos los resultados (R1–R19, incluidos los negativos) están
+La formulación, las demostraciones y todos los resultados (R1–R20, incluidos los negativos) están
 en [`docs/teoria.md`](docs/teoria.md).
 
 ## Uso

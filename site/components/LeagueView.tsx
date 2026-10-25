@@ -4,7 +4,7 @@ import type { League, Zone } from "@/lib/types";
 import { COUNTRY, NAMES } from "@/lib/leagues";
 import { dateShort, fmt, fmtInt, initials, pct, rounds } from "@/lib/format";
 import { heat, onTheme, reloadHeat } from "@/lib/heat";
-import { baseMatrix, LAYOUTS, loadSims, scenario, type Extras, type Scenario, type Sim } from "@/lib/sims";
+import { baseMatrix, LAYOUTS, loadSims, REACH, scenario, type Extras, type ReachKey, type Scenario, type Sim } from "@/lib/sims";
 import Roll from "./Roll";
 import TeamDrawer from "./TeamDrawer";
 
@@ -16,8 +16,15 @@ const XCOLS: Record<XKey, { label: string; title: string; json: string }> = {
   playoffs: { label: "Play.", title: "Probabilidad de clasificar a los playoffs del torneo", json: "playoffs" },
   title: { label: "Camp.", title: "Probabilidad de salir campeón del torneo", json: "title" },
   rel: { label: "Desc.", title: "Probabilidad de descender (promedios o tabla anual)", json: "relegated" },
+  // copas: llega al menos a esa ronda
+  r16: { label: "8vos", title: "Probabilidad de jugar los octavos (directo o por el playoff)", json: "r16" },
+  qf: { label: "4tos", title: "Probabilidad de llegar a cuartos de final", json: "qf" },
+  sf: { label: "Semi", title: "Probabilidad de llegar a semifinales", json: "sf" },
+  final: { label: "Final", title: "Probabilidad de jugar la final", json: "final" },
+  champion: { label: "Camp.", title: "Probabilidad de ganar la copa", json: "champion" },
 };
-const zoneClass = (z: Zone) => (z.key === "relegation" ? "zone-bot" : ["champion", "ucl", "libertadores", "promotion"].includes(z.key) ? "zone-top" : "zone-mid");
+const XORDER: XKey[] = ["asc", "playoffs", "title", "rel", "r16", "qf", "sf", "final", "champion"];
+const zoneClass = (z: Zone) => (["relegation", "out"].includes(z.key) ? "zone-bot" : ["champion", "ucl", "libertadores", "promotion", "r16"].includes(z.key) ? "zone-top" : "zone-mid");
 
 function tween(dur: number, fn: (e: number) => void) {
   if (!dur || matchMedia("(prefers-reduced-motion: reduce)").matches) { fn(1); return; }
@@ -33,7 +40,8 @@ export default function LeagueView({ D }: { D: League }) {
     const M = baseMatrix(D.order, D.teams);
     const xpts = new Float64Array(n), epos = new Float64Array(n);
     const ex: Extras = {};
-    const keys: XKey[] = D.sims.asc ? ["asc"] : D.sims.split ? (D.sims.split.promedios ? ["playoffs", "title", "rel"] : ["playoffs", "title"]) : [];
+    const keys: XKey[] = D.sims.asc ? ["asc"] : D.sims.split ? (D.sims.split.promedios ? ["playoffs", "title", "rel"] : ["playoffs", "title"])
+      : D.sims.cup ? (Object.keys(REACH) as ReachKey[]) : [];
     for (const k of keys) ex[k] = new Float64Array(n);
     D.teams.forEach((t) => { const i = D.order.indexOf(t.id); xpts[i] = t.xpts; epos[i] = t.expected_position; for (const k of keys) ex[k]![i] = t.zones[XCOLS[k].json] ?? 0; });
     return { M, xpts, epos, probs: new Float64Array(D.sims.K * 3), ex, ess: S, cnt: S };
@@ -46,7 +54,7 @@ export default function LeagueView({ D }: { D: League }) {
   const [drawer, setDrawer] = useState<number | null>(null);
   const [themeTick, setThemeTick] = useState(0);
 
-  useEffect(() => { if (!LAYOUTS.includes(D.sims.layout ?? "")) return; let alive = true; loadSims(comp, S, D.sims.K, n, !!D.sims.asc, D.sims.split ?? null).then((s) => alive && setSim(s)); return () => { alive = false; }; }, [comp, S, D.sims.K, n, D.sims.layout]);
+  useEffect(() => { if (!LAYOUTS.includes(D.sims.layout ?? "")) return; let alive = true; loadSims(comp, S, D.sims.K, n, !!D.sims.asc, D.sims.split ?? null, !!D.sims.cup).then((s) => alive && setSim(s)); return () => { alive = false; }; }, [comp, S, D.sims.K, n, D.sims.layout]);
   useEffect(() => onTheme(() => setThemeTick((x) => x + 1)), []);
 
   const base = useMemo(() => (sim ? scenario(sim, {}, fxHi, fxAi) : base0), [sim, base0, fxHi, fxAi]);
@@ -63,13 +71,14 @@ export default function LeagueView({ D }: { D: League }) {
   const M = cur.M;
   const any = Object.keys(fixed).length > 0;
   const zones = D.meta.zones;
-  const zTop = zones.find((z) => z.key === "champion"), zRel = zones.find((z) => z.key === "relegation");
+  const cup = !!D.sims.cup;
+  const zTop = zones.find((z) => z.key === "champion"), zRel = zones.find((z) => z.key === "relegation" || z.key === "out");
 
   // --- héroe: el objetivo de arriba es el título, ascender (Championship) o ganar el torneo (Argentina)
   const isAsc = !!D.sims.asc && !!cur.ex.asc;
   const split = D.sims.split ?? null;
-  const xkeys = (Object.keys(XCOLS) as XKey[]).filter((k) => cur.ex[k]).sort((a, b) => ["asc", "playoffs", "title", "rel"].indexOf(a) - ["asc", "playoffs", "title", "rel"].indexOf(b));
-  const headKey: XKey | null = isAsc ? "asc" : split ? "title" : null;
+  const xkeys = (Object.keys(XCOLS) as XKey[]).filter((k) => cur.ex[k]).sort((a, b) => XORDER.indexOf(a) - XORDER.indexOf(b));
+  const headKey: XKey | null = isAsc ? "asc" : split ? "title" : cup ? "champion" : null;
   const top = (t: number) => (headKey ? cur.ex[headKey]![t] : M[t * n]);
   const baseTop = (t: number) => (headKey ? base.ex[headKey]![t] : zoneProb(base.M, n, t, zTop));
   const relP = (sc: Scenario, t: number) => (sc.ex.rel ? sc.ex.rel[t] : zoneProb(sc.M, n, t, zRel));
@@ -78,6 +87,8 @@ export default function LeagueView({ D }: { D: League }) {
   const FIX = 6 + xkeys.length; // columnas fijas antes de la matriz
   const [r, R] = rounds(D.meta.matches_played, D.meta.matches_total, n);
   const relTop = [...Array(n).keys()].map((t) => [t, relP(cur, t)] as const).sort((a, b) => b[1] - a[1])[0];
+  // copas: el equipo más en duda de seguir en carrera (P(fuera en la fase liga) más cerca de 1/2)
+  const edge = [...Array(n).keys()].map((t) => [t, relP(cur, t)] as const).sort((a, b) => Math.abs(a[1] - 0.5) - Math.abs(b[1] - 0.5))[0];
   const H = D.meta.suspense.champion_entropy_bits, Hm = D.meta.suspense.champion_max_bits;
 
   // --- orden de filas
@@ -152,15 +163,17 @@ export default function LeagueView({ D }: { D: League }) {
         <div className="lhero-grid">
           <div className="lead">
             <span className="label">{NAMES[comp]} · {COUNTRY[comp]} · {D.meta.season_label} · fecha {r} de {R}</span>
-            <h1>{favName} <span className="soft">{isAsc ? (pFav >= 0.5 ? "va camino a la Premier" : "es el favorito a subir") : split ? (pFav >= 0.5 ? `va camino a ganar el ${split.tournament}` : `es el favorito al ${split.tournament}`) : pFav >= 0.5 ? "va camino al título" : "lidera, pero nada está decidido"}</span></h1>
+            <h1>{favName} <span className="soft">{cup ? (pFav >= 0.5 ? `va camino a ganar la ${NAMES[comp]}` : `es el favorito a la ${NAMES[comp]}`) : isAsc ? (pFav >= 0.5 ? "va camino a la Premier" : "es el favorito a subir") : split ? (pFav >= 0.5 ? `va camino a ganar el ${split.tournament}` : `es el favorito al ${split.tournament}`) : pFav >= 0.5 ? "va camino al título" : "lidera, pero nada está decidido"}</span></h1>
             <div className="big">
               <div className="pct tnum"><Roll value={pct(pFav)} /><small>%</small></div>
-              <p className="cap">{isAsc ? "de probabilidad de ascender, directo o por playoffs." : split ? (pFav >= 0.5 ? "de probabilidad de salir campeón." : "de salir campeón; los playoffs reparten mucho.") : pFav >= 0.5 ? "de probabilidad de salir campeón." : "es el favorito más alto."}</p>
+              <p className="cap">{cup ? (pFav >= 0.5 ? "de probabilidad de ganarla." : "de ganarla; las llaves reparten mucho.") : isAsc ? "de probabilidad de ascender, directo o por playoffs." : split ? (pFav >= 0.5 ? "de probabilidad de salir campeón." : "de salir campeón; los playoffs reparten mucho.") : pFav >= 0.5 ? "de probabilidad de salir campeón." : "es el favorito más alto."}</p>
             </div>
           </div>
           <aside className="side">
-            <div className="plate"><div className="k">{split ? `Incertidumbre del ${split.tournament}` : "Incertidumbre del título"}</div><div className="v tnum">{fmt(H, 2)} <i>de {fmt(Hm, 0)} bits</i></div><div className="meter"><span style={{ transform: `scaleX(${H / Hm})` }} /></div><div className="s">0 es liga decidida.</div></div>
-            <div className="plate"><div className="k">Más cerca del descenso</div><div className="v">{D.teams.find((x) => x.id === D.order[relTop[0]])!.name}</div><div className="s tnum">{pct(relTop[1])} % de descender</div></div>
+            <div className="plate"><div className="k">{split ? `Incertidumbre del ${split.tournament}` : cup ? "Incertidumbre del campeón" : "Incertidumbre del título"}</div><div className="v tnum">{fmt(H, 2)} <i>de {fmt(Hm, 0)} bits</i></div><div className="meter"><span style={{ transform: `scaleX(${H / Hm})` }} /></div><div className="s">{cup ? "0 es campeón decidido." : "0 es liga decidida."}</div></div>
+            {cup
+              ? <div className="plate"><div className="k">En la cuerda floja</div><div className="v">{D.teams.find((x) => x.id === D.order[edge[0]])!.name}</div><div className="s tnum">{pct(edge[1])} % de quedar fuera en la fase liga</div></div>
+              : <div className="plate"><div className="k">Más cerca del descenso</div><div className="v">{D.teams.find((x) => x.id === D.order[relTop[0]])!.name}</div><div className="s tnum">{pct(relTop[1])} % de descender</div></div>}
             <div className="plate"><div className="k">Quedan por jugar</div><div className="v tnum">{D.meta.matches_total - D.meta.matches_played} <i>partidos</i></div><div className="s tnum">{D.meta.matches_played} jugados de {D.meta.matches_total}</div></div>
           </aside>
         </div>
@@ -170,7 +183,7 @@ export default function LeagueView({ D }: { D: League }) {
         <div className="board">
           <div className="matrix-shell" ref={shell} onPointerMove={(e) => { const rr = shell.current!.getBoundingClientRect(); shell.current!.style.setProperty("--mx", e.clientX - rr.left + "px"); shell.current!.style.setProperty("--my", e.clientY - rr.top + "px"); }}>
             <div className="mx-toolbar">
-              <h2 className="mx-title">Posiciones finales</h2>
+              <h2 className="mx-title">{cup ? "Puesto en la fase liga" : "Posiciones finales"}</h2>
               <div className="seg" role="group" aria-label="Orden de filas">
                 <button type="button" aria-pressed={sort === "table"} onClick={() => setSort("table")}>Tabla actual</button>
                 <button type="button" aria-pressed={sort === "exp"} onClick={() => setSort("exp")}>Posición esperada</button>
@@ -187,7 +200,7 @@ export default function LeagueView({ D }: { D: League }) {
                   {order.map((t) => {
                     const T = rowsById.get(t)!;
                     const dTop = top(t) - baseTop(t), dRel = relP(cur, t) - relP(base, t);
-                    const [dv, lab] = Math.abs(dTop) >= Math.abs(dRel) ? [dTop, isAsc ? "ascenso" : "título"] : [-dRel, "salvarse"];
+                    const [dv, lab] = Math.abs(dTop) >= Math.abs(dRel) ? [dTop, isAsc ? "ascenso" : cup ? "campeón" : "título"] : [-dRel, cup ? "seguir" : "salvarse"];
                     const show = any && Math.abs(dv) >= 0.005;
                     return (
                       <tr key={t} data-t={t}>
@@ -208,8 +221,8 @@ export default function LeagueView({ D }: { D: League }) {
                 </tbody>
               </table>
             </div>
-            <div className="mx-foot"><span>{any ? `Escenario con ${nf} resultado${nf > 1 ? "s" : ""} fijado${nf > 1 ? "s" : ""}` : `Pronóstico base · ${D.meta.matches_played} de ${D.meta.matches_total} partidos jugados`}</span><span className="tnum">{any ? `muestra efectiva ${fmtInt(cur.ess)} de ${fmtInt(S)}` : `${fmtInt(S)} temporadas`}</span></div>
-            <p className="note" style={{ marginTop: 4 }}>En % sobre {fmtInt(S)} temporadas. {isAsc ? "Asc.: asciende directo o por playoffs. " : split ? `Tabla anual (Apertura + Clausura). Play.: clasifica a octavos del ${split.tournament}; Camp.: lo gana; Desc.: desciende por promedios o por la tabla anual. ` : ""}Toca un equipo para ver qué necesita.{D.teams.filter((x) => x.adj).map((x) => ` * ${x.name}: descuento de ${-x.adj!} puntos.`).join("")}</p>
+            <div className="mx-foot"><span>{any ? `Escenario con ${nf} resultado${nf > 1 ? "s" : ""} fijado${nf > 1 ? "s" : ""}` : `Pronóstico base · ${D.meta.matches_played} de ${D.meta.matches_total} partidos jugados`}</span><span className="tnum">{any ? `muestra efectiva ${fmtInt(cur.ess)} de ${fmtInt(S)}` : `${fmtInt(S)} ${cup ? "ediciones" : "temporadas"}`}</span></div>
+            <p className="note" style={{ marginTop: 4 }}>En % sobre {fmtInt(S)} {cup ? "ediciones" : "temporadas"}. {cup ? "Posiciones de la fase liga: del 1 al 8 a octavos, del 9 al 24 al playoff. Columnas: llega al menos a octavos, cuartos, semis y final, y gana la copa. " : ""}{isAsc ? "Asc.: asciende directo o por playoffs. " : split ? `Tabla anual (Apertura + Clausura). Play.: clasifica a octavos del ${split.tournament}; Camp.: lo gana; Desc.: desciende por promedios o por la tabla anual. ` : ""}Toca un equipo para ver qué necesita.{D.teams.filter((x) => x.adj).map((x) => ` * ${x.name}: descuento de ${-x.adj!} puntos.`).join("")}</p>
           </div>
 
           <aside className="lab" aria-labelledby="lab-title">
@@ -246,7 +259,7 @@ export default function LeagueView({ D }: { D: League }) {
       </section>
 
       <section className="wrap" id="decisivos">
-        <div className="sh"><div className="t"><h2>Partidos decisivos</h2></div><p>Cuánta incertidumbre sobre {isAsc ? "el ascenso" : split ? `el ${split.tournament}` : "el título"} y el descenso resuelve cada resultado, en bits.</p></div>
+        <div className="sh"><div className="t"><h2>Partidos decisivos</h2></div><p>Cuánta incertidumbre sobre {cup ? "el campeón y quién queda fuera" : <>{isAsc ? "el ascenso" : split ? `el ${split.tournament}` : "el título"} y el descenso</>} resuelve cada resultado, en bits.</p></div>
         <div className="decisive">
           {(() => { const up = (d: (typeof D.decisive)[number]) => (isAsc ? d.mi_promotion ?? 0 : d.mi_title);
             const list = D.decisive.slice(0, 6); const mx = Math.max(...list.map((d) => up(d) + d.mi_relegation), 1e-6);
@@ -256,7 +269,7 @@ export default function LeagueView({ D }: { D: League }) {
                 <div><div className="m">{d.home_name}<i>contra</i>{d.away_name}</div><div className="sub">{dateShort(d.date)} · L {pct(d.p_home, 0)} · E {pct(d.p_draw, 0)} · V {pct(d.p_away, 0)}</div></div>
                 <div className="bits">{fmt(up(d) + d.mi_relegation, 2)} bits
                   <div className="bar"><span className="t" style={{ width: `${(up(d) / mx) * 100}%` }} /><span style={{ left: `${(up(d) / mx) * 100}%`, width: `${(d.mi_relegation / mx) * 100}%` }} /></div>
-                  <div className="split">{up(d) >= 0.005 && <span><i className="dot" />{isAsc ? "ascenso" : "título"} {fmt(up(d), 2)}</span>}{d.mi_relegation >= 0.005 && <span><i className="dot r" />descenso {fmt(d.mi_relegation, 2)}</span>}</div>
+                  <div className="split">{up(d) >= 0.005 && <span><i className="dot" />{isAsc ? "ascenso" : cup ? "campeón" : "título"} {fmt(up(d), 2)}</span>}{d.mi_relegation >= 0.005 && <span><i className="dot r" />{cup ? "eliminación" : "descenso"} {fmt(d.mi_relegation, 2)}</span>}</div>
                 </div>
               </div>
             )); })()}

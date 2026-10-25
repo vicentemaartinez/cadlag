@@ -136,3 +136,48 @@ def test_hodge_ciclo_sin_triangulos_es_armonico():
     Y = np.array([1.0, 1.0, 1.0, -1.0])
     d = decompose(4, e, Y, np.ones(4))
     assert d["share_harmonic"] > 0.999
+
+
+def _cup_sintetica():
+    from cadlag.sim import ucl
+    n = 36
+    fx = [(i, (i + d) % n) if k % 2 == 0 else ((i + d) % n, i) for k, (i, d) in
+          enumerate((i, d) for i in range(n) for d in (1, 2, 3, 4))]
+    todo = pd.DataFrame(fx, columns=["hi", "ai"]).assign(date=pd.Timestamp("2026-10-01", tz="UTC"))
+    done = pd.DataFrame(columns=["hi", "ai", "hg", "ag"])
+    return ucl.CupState("uefa.champions", 2030, list(range(n)), done, todo, {}, {})
+
+
+def test_champions_cuadro_cuenta_etapas():
+    from cadlag.sim import ucl
+    cs = _cup_sintetica()
+    rng0 = np.random.default_rng(1)
+    att = rng0.normal(0, 0.3, 36)
+
+    def draw(S, rng):
+        return dict(att=np.tile(att, (S, 1)), dfn=np.tile(att, (S, 1)), mu=np.full(S, 0.2), eta=np.full(S, 0.25))
+    res = ucl.simulate_cup(cs, draw, S=3000, seed=0)
+    st, pos = res["stage"], res["pos"]
+    assert (pd.concat([cs.todo.hi, cs.todo.ai]).value_counts() == 8).all()
+    for k, cnt in enumerate([12, 8, 8, 4, 2, 1, 1]):
+        assert ((st == k).sum(1) == cnt).all()
+    rows = np.arange(len(st))[:, None]
+    order = np.argsort(pos, axis=1)
+    assert (st[rows, order[:, :8]] >= 2).all()               # el top 8 va directo a octavos
+    assert (st[rows, order[:, 24:]] == 0).all()              # del 25 al 36 quedan fuera
+    # 1.º y 2.º están en mitades opuestas: pueden jugar la final entre ellos, 3.º y 4.º también
+    for a_, b_ in ((0, 1), (2, 3)):
+        sa, sb = st[rows[:, 0], order[:, a_]], st[rows[:, 0], order[:, b_]]
+        assert ((sa >= 5) & (sb >= 5)).any()
+
+
+def test_champions_simetria_con_fuerzas_iguales():
+    from cadlag.sim import ucl
+    cs = _cup_sintetica()
+
+    def draw(S, rng):
+        return dict(att=np.zeros((S, 36)), dfn=np.zeros((S, 36)), mu=np.full(S, 0.2), eta=np.full(S, 0.25))
+    res = ucl.simulate_cup(cs, draw, S=20000, seed=3)
+    p = (res["stage"] == 6).mean(0)
+    assert abs(p.sum() - 1) < 1e-9
+    assert np.abs(p - 1 / 36).max() < 0.01                   # todos iguales: 1/36 cada uno
