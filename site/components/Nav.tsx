@@ -8,7 +8,7 @@ import { fmt, pct } from "@/lib/format";
 import { THEME_EVENT, reloadHeat } from "@/lib/heat";
 
 export type NavSummary = { comp: string; fav: string; p: number }[];
-type Panel = "ligas" | "modelo" | "mundo" | "proyecto";
+type Panel = "ligas" | "copas" | "modelo" | "mundo" | "proyecto";
 
 export default function Nav({ summary, topTeam, lambda2 }: { summary: NavSummary; topTeam: string; lambda2: number }) {
   const [open, setOpen] = useState<Panel | null>(null);
@@ -54,7 +54,8 @@ export default function Nav({ summary, topTeam, lambda2 }: { summary: NavSummary
     <div className="mg-col"><span className="label mg" style={{ ["--i" as string]: i }}>{label}</span>{kids}</div>
   );
   const panels: Record<Panel, React.ReactNode> = {
-    ligas: <>{col("Europa", 0, EUROPE.filter(has).map((c, i) => L(c, i + 1)))}{col("Sudamérica", 1, SOUTH.filter(has).map((c, i) => L(c, i + 2)))}{CUPS.some(has) && col("Copas", 2, CUPS.filter(has).map((c, i) => L(c, i + 3)))}</>,
+    ligas: <>{col("Europa", 0, EUROPE.filter(has).map((c, i) => L(c, i + 1)))}{col("Sudamérica", 1, SOUTH.filter(has).map((c, i) => L(c, i + 2)))}</>,
+    copas: <>{col("Europa", 0, CUPS.filter(has).map((c, i) => L(c, i + 1)))}</>,
     modelo: <>
       {col("Cómo funciona", 0, [A("/#metodo", 1, "De los goles a la tabla", "4 pasos"), A("/#trayectoria", 2, "Una temporada", "Chile 2026")])}
       {col("Qué tan bien predice", 1, [A("/#resultados", 2, "Resultados", "contra Bet365"), A("/#resultados", 3, "Lo que no estaba", "4 hipótesis")])}
@@ -77,7 +78,7 @@ export default function Nav({ summary, topTeam, lambda2 }: { summary: NavSummary
         <div className="wrap nav-row">
           <Link className="brand" href="/" aria-label="càdlàg, inicio"><Glyph />càdlàg</Link>
           <nav className="menu" aria-label="Principal">
-            {(["ligas", "modelo", "mundo", "proyecto"] as Panel[]).map((p) => (
+            {(["ligas", "copas", "modelo", "mundo", "proyecto"] as Panel[]).map((p) => (
               <button key={p} className="mi" type="button" aria-expanded={open === p}
                 onPointerEnter={(e) => e.pointerType === "mouse" && show(p)}
                 onClick={() => (open === p ? hide(0) : show(p))}>{p[0].toUpperCase() + p.slice(1)}</button>
@@ -100,8 +101,11 @@ export default function Nav({ summary, topTeam, lambda2 }: { summary: NavSummary
       <div className={"sheet" + (sheet ? " on" : "")} onClick={(e) => (e.target as HTMLElement).closest("a") && setSheet(false)}>
         <div className="wrap">
           <div className="grp"><span className="label">Ligas</span>
-            {LEAGUES.filter(has).map((c) => <Link key={c} {...it()} href={leagueHref(c)}>{NAMES[c]}<span>{pct(fav(c).p, 0)} %</span></Link>)}
+            {LEAGUES.filter((c) => has(c) && !CUPS.includes(c)).map((c) => <Link key={c} {...it()} href={leagueHref(c)}>{NAMES[c]}<span>{pct(fav(c).p, 0)} %</span></Link>)}
           </div>
+          {CUPS.some(has) && <div className="grp"><span className="label">Copas</span>
+            {CUPS.filter(has).map((c) => <Link key={c} {...it()} href={leagueHref(c)}>{NAMES[c]}<span>{pct(fav(c).p, 0)} %</span></Link>)}
+          </div>}
           <div className="grp"><span className="label">Modelo</span>
             <Link {...it()} href="/#metodo">Cómo funciona</Link><Link {...it()} href="/#trayectoria">Una temporada</Link><Link {...it()} href="/#resultados">Resultados</Link>
           </div>

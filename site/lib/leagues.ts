@@ -29,6 +29,6 @@ export const SLUG: Record<string, string> = {
   "eng.1": "premier-league", "esp.1": "laliga", "ita.1": "serie-a", "ger.1": "bundesliga", "fra.1": "ligue-1", "eng.2": "championship", "chi.1": "chile", "bra.1": "brasileirao", "arg.1": "argentina", "uefa.champions": "champions",
 };
 export const COMP_OF: Record<string, string> = Object.fromEntries(Object.entries(SLUG).map(([c, s]) => [s, c]));
-export const leagueHref = (comp: string) => `/liga/${SLUG[comp]}/`;
+export const leagueHref = (comp: string) => (CUPS.includes(comp) ? `/copa/${SLUG[comp]}/` : `/liga/${SLUG[comp]}/`);
 
 export const BASE = process.env.NEXT_PUBLIC_BASE_PATH || "";

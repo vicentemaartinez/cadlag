@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import LeagueTabs from "@/components/LeagueTabs";
 import LeagueView from "@/components/LeagueView";
 import { availableLeagues, getLeague } from "@/lib/data";
-import { COMP_OF, NAMES, SLUG } from "@/lib/leagues";
+import { COMP_OF, NAMES, SLUG, isCup } from "@/lib/leagues";
 
 export const dynamicParams = false;
-export function generateStaticParams() { return availableLeagues().map((c) => ({ slug: SLUG[c] })); }
+export function generateStaticParams() { return availableLeagues().filter((c) => !isCup(c)).map((c) => ({ slug: SLUG[c] })); }
 
 export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
   const comp = COMP_OF[(await params).slug]; const D = getLeague(comp);
@@ -16,5 +16,5 @@ export async function generateMetadata({ params }: { params: Promise<{ slug: str
 
 export default async function Page({ params }: { params: Promise<{ slug: string }> }) {
   const comp = COMP_OF[(await params).slug]; const D = getLeague(comp);
-  return (<><LeagueTabs current={comp} leagues={availableLeagues()} /><LeagueView key={comp} D={D} /></>);
+  return (<><LeagueTabs current={comp} leagues={availableLeagues().filter((c) => !isCup(c))} /><LeagueView key={comp} D={D} /></>);
 }
