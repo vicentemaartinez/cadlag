@@ -50,7 +50,9 @@ Configuración (una vez):
   se deduce sola; si no (semifinales recién jugadas, finales), se agrega el ganador en
   `data/manual/shootouts.csv` (competición, fecha UTC del partido, ganador).
 - Libertadores y Sudamericana (`src/cadlag/sim/conmebol.py`): el pronóstico empieza cuando los
-  grupos están completos en ESPN (después de la tercera fase previa, en marzo).
+  grupos están completos en ESPN (después de la tercera fase previa, en marzo). Mientras quedan
+  partidos de grupo se publica también `conmebol.sims.gz` (~2 MB) para el laboratorio; al terminar
+  los grupos deja de generarse y el sitio esconde el laboratorio solo.
 - Champions League (`src/cadlag/sim/ucl.py`), tres datos a mano:
   - `MISSING_FIXTURES`: partidos de la fase liga que ESPN no trae (en 2026-27 faltaban cinco). Se
     agregan con fecha y nombres; si después aparecen en los datos, se ignoran solos.

@@ -23,7 +23,7 @@ Mapa del repositorio para quien quiera leerlo o extenderlo.
 | `sim/ucl.py` | Champions con fase liga: tabla de 36 con los desempates del reglamento, playoff, cuadro fijo, cruces y resultados ya conocidos |
 | `sim/ucl_groups.py` | Champions con fase de grupos (hasta 2023-24), solo para validar |
 | `sim/conmebol.py` | Libertadores y Sudamericana simuladas juntas: grupos, playoff entre copas, llaves sin alargue, final única |
-| `cup_conmebol.py` | Pronóstico de las copas de la Conmebol con la capa sudamericana (`model.europe.SOUTH`) |
+| `cup_conmebol.py` | Pronóstico de las copas de la Conmebol con la capa sudamericana (`model.europe.SOUTH`) y simulaciones del laboratorio de grupos (`lab_blob`) |
 | `cup.py` | Pronóstico de copas: fuerzas, simulación, "¿qué necesita?" en la fase liga y JSON del sitio |
 | `sim/rare.py` | Eventos raros por muestreo por importancia (fuerza + resultados inclinados) |
 | `data/transfers.py` | Traspasos de Transfermarkt (top 5, 2009-2025) ubicados en los ids de ESPN |

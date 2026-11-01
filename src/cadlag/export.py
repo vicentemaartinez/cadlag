@@ -239,18 +239,26 @@ def export_web() -> None:
                                       **({"title": t["zones"]["title"]} if "title" in t["zones"] else {}),
                                       **({"champion": t["zones"]["champion"]} if sims.get("cup") else {}))
                                  for t in d["teams"]]))
-    # copas con grupos (Libertadores, Sudamericana): el JSON del pronóstico va directo, sin laboratorio
+    # copas con grupos (Libertadores, Sudamericana): el JSON del pronóstico va directo; mientras quedan
+    # partidos de grupo, con las simulaciones compartidas del laboratorio (conmebol.sims.gz)
     from .cup import GROUP_CUPS
+    from .cup_conmebol import SIMS_FILE
+    lab = False
     for c in GROUP_CUPS:
         p = WEB / f"{c}.json"
         if not p.exists():
             continue
         d = json.loads(p.read_text())
+        lab |= "sims" in d
         (SITE / f"{c}.json").write_text(json.dumps(d, ensure_ascii=False, separators=(",", ":")))
-        index.append(dict(comp=c, season_label=d["season_label"], cup=True, kind="groups", matches_played=d["matches_played"],
+        index.append(dict(comp=c, season_label=d["season_label"], cup=True, kind="groups", **({"lab": True} if "sims" in d else {}), matches_played=d["matches_played"],
                           matches_total=d["matches_total"], last_result=d["last_result"], S=d["n_sims"],
                           teams=[dict(id=t["id"], name=t["name"], p=t["group_probs"] or [0, 0, 0, 0],
                                       champion=r4(t["zones"]["champion"])) for t in d["teams"] if t["group"]]))
+    if lab and (WEB / SIMS_FILE).exists():
+        (SITE / SIMS_FILE).write_bytes((WEB / SIMS_FILE).read_bytes())
+    elif (SITE / SIMS_FILE).exists():
+        (SITE / SIMS_FILE).unlink()
     (SITE / "index.json").write_text(json.dumps(dict(leagues=index, backtest=data.get("_backtest", {})),
                                                 ensure_ascii=False, separators=(",", ":")))
     (SITE / "global.json").write_text(json.dumps(data["_global"], ensure_ascii=False, separators=(",", ":")))

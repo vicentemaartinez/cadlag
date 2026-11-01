@@ -206,3 +206,15 @@ def test_conmebol_cuadro_cuenta_etapas():
     third = res[cm.LIB]["groups"][:, :, 2]
     rows = np.arange(len(sud))[:, None]
     assert (sud[rows, third] >= 1).all()                    # los terceros juegan el playoff
+    # laboratorio: el archivo compartido reproduce puntos, puestos y etapas de cada simulación
+    from cadlag.cup_conmebol import lab_blob
+    blob, meta = lab_blob(st, res, S_lab=500)
+    B = np.frombuffer(blob, np.uint8).reshape(500, meta["W"])
+    K = meta["cups"][cm.LIB]["K"]
+    assert K == cm.LAB_K and meta["base"] == 8 * K
+    assert (B[:, :K] == res[cm.LIB]["o"][:500]).all()
+    base, gp = meta["base"], res[cm.LIB]["groups"][:500]
+    assert (B[np.arange(500), base + n + gp[:, 0, 2]] == 2).all()      # el tercero del grupo A, puesto 2
+    assert (B[:, base + 2 * n: base + 3 * n] == lib[:500] + 1).all()
+    assert (B[:, base: base + 32] == res[cm.LIB]["pts"][:500, :32]).all()
+    assert (B[:, base + 32: base + n] == res[cm.SUD]["pts"][:500, 32:]).all()

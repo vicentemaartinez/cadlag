@@ -24,8 +24,9 @@ const index = JSON.parse(await readFile(join(dir, "index.json"), "utf8"));
 const have = new Set(index.leagues.map((l) => l.comp));
 const missing = leagues.filter((c) => !have.has(c));
 if (missing.length) console.warn(`aún sin datos (se omiten): ${missing.join(", ")}`);
-// las copas con grupos no tienen simulaciones para el laboratorio
+// las copas con grupos comparten un solo archivo de simulaciones, y solo mientras quedan partidos de grupo
 const groups = new Set(index.leagues.filter((l) => l.kind === "groups").map((l) => l.comp));
 const files = ["global.json", "trajectory_chi.1.json", ...leagues.filter((c) => have.has(c)).flatMap((c) => (groups.has(c) ? [`${c}.json`] : [`${c}.json`, `${c}.sims.gz`]))];
+if (index.leagues.some((l) => l.kind === "groups" && l.lab)) files.push("conmebol.sims.gz");
 await Promise.all(files.map(get));
 console.log(`datos: ${files.length + 1} archivos desde ${base}`);

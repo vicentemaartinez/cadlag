@@ -553,6 +553,17 @@ alargue. Las fases previas no se simulan: el pronóstico parte cuando los grupos
 Como ESPN no trae las tandas de penales, las llaves que se definieron así se leen de la ronda
 siguiente o, si es la última jugada, de `data/manual/shootouts.csv`.
 
+**Laboratorio de grupos.** Mientras quedan partidos de grupo, el sitio permite fijar los próximos
+16 de cada copa con la misma reponderación de §22: w_s = Π_k P(o_k fijado | fuerzas de s). Las dos
+copas comparten un archivo (`conmebol.sims.gz`, 10.000 ediciones) con, por edición, el resultado
+sorteado y P(L, E, V) de esos partidos, y para cada equipo sus puntos de grupo, su puesto en el
+grupo y la etapa alcanzada en cada copa. Al fijar un resultado distinto del sorteado se corrigen los
+puntos y se reordenan los grupos tocados (desempate: el puesto que tenía cada equipo en esa
+edición); si el puesto de un equipo no cambia se usa la etapa sorteada y, si cambia,
+P(etapa | equipo, puesto), encogida hacia la de cualquier equipo de su copa en ese puesto (50
+ediciones de peso). Solo se fijan partidos de la copa que se mira; el efecto sobre la otra (un
+tercero de la Libertadores que va al playoff de la Sudamericana) queda en la etapa sorteada.
+
 ---
 
 # Resultados empíricos del proyecto base (octubre de 2026)

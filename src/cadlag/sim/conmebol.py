@@ -31,7 +31,7 @@ import pandas as pd
 from ..data import store
 from ..leagues import CRIT_CODE
 from . import tiebreak
-from .ucl import _nb, _rate, two_legs
+from .ucl import _nb, _rate, outcome_probs, two_legs
 
 LIB, SUD = "conmebol.libertadores", "conmebol.sudamericana"
 KO = {LIB: ["round-of-16", "quarterfinals", "semifinals", "final"],
@@ -117,15 +117,20 @@ def conmebol_state(matches: pd.DataFrame, syear: int, names: dict, asof=None, co
                     for nm_ in w["winner"]:
                         if ids.get(nm_) in (r.home, r.away):
                             pen[(comp, rnd, frozenset((int(r.hi), int(r.ai))))] = tix[ids[nm_]]
-        cups[comp] = Cup(comp, syear, _groups_from(g), g[g["finished"]], g[~g["finished"]].reset_index(drop=True), ko)
+        cups[comp] = Cup(comp, syear, _groups_from(g), g[g["finished"]], g[~g["finished"]].sort_values("date", kind="stable").reset_index(drop=True), ko)
     return ConmebolState(syear, teams, cups, pen)
 
 
 # ----------------------------------------------------------------------------------------
 # Grupos
 # ----------------------------------------------------------------------------------------
+LAB_K = 16   # partidos de grupo por copa que se pueden fijar en el laboratorio del sitio
+
+
 def group_phase(cup: Cup, F, rng, r):
-    """(S, 8, 4): equipos de cada grupo por puesto; y la campaña (S, n) para la localía."""
+    """(S, 8, 4): equipos de cada grupo por puesto; la campaña (S, n) para la localía; y para el
+    laboratorio, los puntos de grupo (S, n), el resultado sorteado (0/1/2) de los próximos ``LAB_K``
+    partidos y su P(L, E, V) dadas las fuerzas de cada simulación."""
     n = F["att"].shape[1]; S = F["mu"].shape[0]
     pts, gd, gf, w, agf = (np.zeros((S, n)) for _ in range(5))
     hp, hg, hf, ha = (np.zeros((S, n, n)) for _ in range(4))
@@ -139,9 +144,14 @@ def group_phase(cup: Cup, F, rng, r):
 
     for h, a, x, y in cup.done[["hi", "ai", "hg", "ag"]].itertuples(index=False):
         add(int(h), int(a), float(x), float(y))
-    for h, a in cup.todo[["hi", "ai"]].itertuples(index=False):
+    K = min(LAB_K, len(cup.todo))
+    o = np.zeros((S, K), np.uint8); q = np.zeros((S, K, 3))
+    for k, (h, a) in enumerate(cup.todo[["hi", "ai"]].itertuples(index=False)):
         lh, la = _rate(F, int(h), int(a), False)
-        add(int(h), int(a), _nb(rng, lh, r).astype(float), _nb(rng, la, r).astype(float))
+        x, y = _nb(rng, lh, r).astype(float), _nb(rng, la, r).astype(float)
+        if k < K:
+            o[:, k] = np.where(x > y, 0, np.where(x == y, 1, 2)); q[:, k] = outcome_probs(lh, la, r)
+        add(int(h), int(a), x, y)
     crit_names = (["PTS", "H2H_PTS", "H2H_GD", "H2H_GF", "GD", "GF", "LOTS"] if cup.syear >= 2026
                   else ["PTS", "GD", "GF", "AGF", "LOTS"])
     crit = np.array([CRIT_CODE[c] for c in crit_names], np.int64)
@@ -154,7 +164,7 @@ def group_phase(cup: Cup, F, rng, r):
         for k in range(len(ix)):
             out[:, g, k] = ix[np.argmax(pos == k, axis=1)]
     campaign = pts * 1e4 + gd * 1e2 + gf          # mejor campaña (para la localía en cuartos y semis)
-    return out, campaign
+    return out, campaign, dict(pts=pts, o=o, q=q)
 
 
 # ----------------------------------------------------------------------------------------
@@ -245,14 +255,14 @@ def simulate(st: ConmebolState, draw, S=20000, seed=0, chunk=5000, r=20.0):
     """Devuelve, por copa, la etapa alcanzada (S, n) y los puestos de grupo (S, 8, 4)."""
     rng = np.random.default_rng(seed)
     n = len(st.teams)
-    out = {c: dict(stage=[], groups=[]) for c in st.cups}
+    out = {c: dict(stage=[], groups=[], pts=[], o=[], q=[]) for c in st.cups}
     for a in range(0, S, chunk):
         b = min(S, a + chunk); s = b - a; rows = np.arange(s)
         F = draw(s, rng)
         third = None
         if LIB in st.cups:
             cup = st.cups[LIB]
-            gp, camp = group_phase(cup, F, rng, r)
+            gp, camp, lab = group_phase(cup, F, rng, r)
             stage = np.full((s, n), -1, np.int8)
             stage[rows[:, None], gp.reshape(s, -1)] = 0
             stage[rows[:, None], gp[:, :, :2].reshape(s, -1)] = 1
@@ -271,9 +281,11 @@ def simulate(st: ConmebolState, draw, S=20000, seed=0, chunk=5000, r=20.0):
                 stage[rows, wv] = 2
             stage = _bracket(st, cup, KO[LIB][1:], winners, F, rng, r, camp, stage, 2)
             out[LIB]["stage"].append(stage); out[LIB]["groups"].append(gp)
+            for k in ("pts", "o", "q"):
+                out[LIB][k].append(lab[k])
         if SUD in st.cups:
             cup = st.cups[SUD]
-            gp, camp = group_phase(cup, F, rng, r)
+            gp, camp, lab = group_phase(cup, F, rng, r)
             stage = np.full((s, n), -1, np.int8)
             stage[rows[:, None], gp.reshape(s, -1)] = 0
             stage[rows[:, None], gp[:, :, 1].reshape(s, -1)] = 1
@@ -307,4 +319,6 @@ def simulate(st: ConmebolState, draw, S=20000, seed=0, chunk=5000, r=20.0):
                 stage[rows, wv] = 3
             stage = _bracket(st, cup, KO[SUD][2:], winners, F, rng, r, camp, stage, 3)
             out[SUD]["stage"].append(stage); out[SUD]["groups"].append(gp)
+            for k in ("pts", "o", "q"):
+                out[SUD][k].append(lab[k])
     return {c: {k: np.concatenate(v, 0) for k, v in o.items()} for c, o in out.items()}
