@@ -98,7 +98,7 @@ def export_sims(S: int = 20000, K: int = 10, comps=None, seed: int = 7, cups=Non
         )
         print(f"  sims {comp}: {S} temporadas, {k} partidos fijables", flush=True)
     from . import cup as cupm
-    for comp in (list(cupm.CUPS) if cups is None else cups):
+    for comp in [c for c in (list(cupm.CUPS) if cups is None else cups) if c in cupm.CUPS]:   # las de grupos no tienen laboratorio
         p = WEB / f"{comp}.json"
         if not p.exists():
             continue
