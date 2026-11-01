@@ -16,6 +16,8 @@ site/public/data/
 outputs/backtest/*.log
 outputs/europe/*.parquet
 outputs/europe/*.log
+outputs/sudamerica/*.parquet
+outputs/sudamerica/*.log
 
 # datos de terceros sin licencia de redistribución (se descargan al usarlos)
 data/raw/transfermarkt/

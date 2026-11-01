@@ -129,9 +129,10 @@ def _rate(F, h, a, neutral, idx=None):
     return lh, la
 
 
-def two_legs(F, u, v, rng, r, legs=None, neutral=False):
+def two_legs(F, u, v, rng, r, legs=None, neutral=False, extra_time=True):
     """Llave entre u (ida de local) y v (vuelta de local); devuelve el ganador (S,).
-    ``legs``: resultados conocidos [(gu, gv) o None, (gu, gv) o None] (goles de u y de v)."""
+    ``legs``: resultados conocidos [(gu, gv) o None, (gu, gv) o None] (goles de u y de v).
+    ``extra_time=False``: con el global igualado se va directo a penales (copas de la Conmebol)."""
     S = F["mu"].shape[0]
     u = np.broadcast_to(u, (S,)).astype(int); v = np.broadcast_to(v, (S,)).astype(int)
     legs = legs or [None, None]
@@ -157,7 +158,7 @@ def two_legs(F, u, v, rng, r, legs=None, neutral=False):
             tot_u += _nb(rng, lu2, r); tot_v += _nb(rng, lv2, r)
         lu, lv = lu2, lv2
     tie = tot_u == tot_v
-    if tie.any():
+    if tie.any() and extra_time:
         eu, ev = _nb(rng, lu / 3, r), _nb(rng, lv / 3, r)
         tot_u = tot_u + tie * eu; tot_v = tot_v + tie * ev
     tie = tot_u == tot_v

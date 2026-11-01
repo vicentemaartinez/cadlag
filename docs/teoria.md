@@ -531,6 +531,28 @@ Metropolitano: si llega el Atlético, juega de local.
 El modelo de una copa con fase de grupos (hasta 2023-24, `sim.ucl_groups`) se implementó solo para
 validar con más ediciones.
 
+## 27. Libertadores y Sudamericana
+
+La capa de §26 está escrita para cualquier confederación (`model.europe.Region`). La sudamericana
+usa los partidos de Libertadores y Sudamericana desde 2010, con el Brasileirão de referencia, la
+Liga Profesional como otra liga fuerte y otras ocho con su propio prior de offset: Chile y las
+siete que solo alimentan esta capa (Colombia, Uruguay, Ecuador, Paraguay, Perú, Bolivia y Venezuela,
+traídas de ESPN desde 2010 y ajustadas como las europeas de §26). Así, todos los equipos de las dos
+copas parten de su liga. La temporada es el año
+calendario. Las fases previas de la Libertadores y la primera fase de la Sudamericana cuentan como
+previas para el prior de un equipo sin historia.
+
+Las dos copas se simulan juntas (`sim.conmebol`), porque los terceros de cada grupo de la
+Libertadores pasan al playoff de la Sudamericana contra sus segundos: con las mismas fuerzas
+sorteadas, se juegan los grupos de ambas (desempate hasta 2025: puntos, diferencia, goles, goles de
+visita; desde 2026, la minitabla primero), los octavos de la Libertadores (primeros contra
+segundos, sin restricciones, vuelta en cancha del primero), el playoff y los octavos de la
+Sudamericana, y el cuadro (sorteado mientras no esté en los datos, vuelta para el de mejor
+campaña). Las llaves a dos partidos van directo a penales; la final es única, neutral y con
+alargue. Las fases previas no se simulan: el pronóstico parte cuando los grupos están completos.
+Como ESPN no trae las tandas de penales, las llaves que se definieron así se leen de la ronda
+siguiente o, si es la última jugada, de `data/manual/shootouts.csv`.
+
 ---
 
 # Resultados empíricos del proyecto base (octubre de 2026)
@@ -565,7 +587,8 @@ y la geometría del grafo entre ligas (R6), que es el aporte más original.
 Los pendientes 1 a 4 de la primera etapa están implementados (§17-20, resultados R12-R15); el
 modelo de dos latentes es el oficial en todas las ligas (§21, R16) y el laboratorio del sitio
 condiciona por reponderación (§22). La Championship (§23, R17-R18), Argentina (§24, R19) y la Champions League (§26, R20) están
-implementadas. Quedan: las otras copas (Libertadores, Europa League).
+implementadas, y la Libertadores y la Sudamericana también (§27, R21). Quedan la Europa League y la
+Conference, que el mismo código ya puede simular con poco más que su formato.
 
 ## Resultados de la segunda etapa
 
@@ -580,6 +603,7 @@ implementadas. Quedan: las otras copas (Libertadores, Europa League).
 | R18 | ¿Sirve el prior propio para los descendidos (§23)? | Sí. Frente al mismo modelo sin él: +0,0019 ± 0,0005 nats por partido (z = 3,6), +0,0038 ± 0,0012 en los partidos de equipos recién llegados; en el ascenso +0,0046 ± 0,0023, casi todo en pretemporada (Brier 0,094 frente a 0,099). El ajuste fuera de muestra separa las dos poblaciones en el bloque de tiros: descendidos $a=+0,10$, $b=+0,13$; ascendidos $a=0,00$, $b=-0,05$ | `shots2_norel_fit.py`, `season_compare.py` |
 | R19 | ¿Y en Argentina (zonas, playoffs, promedios)? | Partidos desde 2016 (4.218): dos latentes +0,0035 ± 0,0019 frente al núcleo (z = 1,9, sin evidencia de que pierda, así que queda el oficial); en los 1.944 con cuotas, RPS 0,2134 frente a 0,2140 del núcleo y 0,2071 de Bet365. Temporadas (10, tabla de cada año): +0,008 ± 0,009. Torneos con el formato actual (Apertura y Clausura 2025, Apertura 2026), fuera de muestra: la clasificación a octavos se pronostica bien (Brier 0,12 promediando momentos, frente a 0,25 de repartir 16 de 30 al azar; 0,118 el oficial y 0,120 el núcleo), pero los tres campeones fueron sorpresas: Platense, Estudiantes y Belgrano tenían entre 1,4 y 6,3 % en todos los momentos, con favoritos de 11-23 %. Una llave de 16 a partido único con alargue y penales reparte mucho; tres torneos no alcanzan para evaluar la calibración del campeón | `backtest.py arg.1 2016`, `shots2_analysis.py`, `season_compare.py`, `tournament_backtest.py` |
 | R20 | ¿Sirve anclar los equipos europeos a su liga para pronosticar la Champions (§26)? | **Sí.** Partidos UEFA de 2018-19 a 2026-27 (4.100, hiperparámetros ajustados con 2011-2017): la capa anclada a las 16 ligas con modelo doméstico gana **+0,030 ± 0,004** nats por partido (z = 7,2) a la misma capa solo con partidos de copa, y **+0,013 ± 0,003** (z = 4,4) a la anclada solo a las cinco grandes; la ganancia de las ligas nuevas está en los partidos de sus equipos (+0,024 ± 0,005 en 2.093; en el resto, +0,002 ± 0,002). Frente a solo copas, anclar a las cinco grandes ya ganaba +0,018 ± 0,003, sobre todo en los cruces entre un equipo de esas ligas y uno de otra (Europa League +0,061 ± 0,012). El residuo europeo agrega +0,0016 ± 0,0007. Torneos (ocho ediciones, 2018-19 a 2025-26, ocho o nueve momentos cada una): con las cinco grandes, el log score de la etapa alcanzada mejora **−0,020 ± 0,008** por equipo frente a solo copas (siete de ocho ediciones) y el del campeón −0,11 ± 0,18 (ruido: dos de las ocho las ganó el PSG, con 1,9 % y 5,6 % al empezar, 4,7 % y 10,7 % solo con copas); pasar de 5 a 16 ligas es neutro a ese nivel (+0,003 ± 0,005): el campeón y las rondas finales los deciden los equipos de las cinco grandes, que no cambian. Offsets netos frente a la Premier en 2026: LaLiga −0,27, Bundesliga −0,31, Serie A −0,37, Ligue 1 −0,50; Portugal −0,92, Bélgica −0,95, Países Bajos −0,99, Turquía −1,03, Dinamarca −1,11, Suiza −1,16, Noruega −1,22, Grecia −1,22, Austria −1,27, Suecia −1,33, Escocia −1,44. Probado y descartado: una media propia para los equipos presentes al empezar los datos y una media común de reversión (mejor dentro de muestra, peor fuera: 2,989 frente a 2,974) | `fit_extra_leagues.py`, `europe_fit.py`, `ucl_backtest.py` |
+| R21 | ¿Y en Sudamérica (Libertadores y Sudamericana, §27)? | **Sí.** Partidos de Libertadores y Sudamericana de 2021 a 2026 (1.790, hiperparámetros ajustados con 2011-2020): la capa anclada a las diez ligas con modelo doméstico gana **+0,029 ± 0,007** nats por partido (z = 4,1) a la misma capa solo con partidos de copa y **+0,013 ± 0,005** a la anclada solo a Brasil y Argentina. Con solo Brasil, Argentina y Chile la ganancia frente a solo copas era +0,018 ± 0,005. La localía pesa más que en Europa (e^η ≈ 1,50 frente a 1,21) y la fuerza doméstica se traslada con γ ≈ 0,80: en las copas los equipos quedan más parejos de lo que dice su liga. Torneos (Libertadores 2017-2025, Sudamericana 2023-2025, desde el inicio de los grupos y antes de cada ronda): log score de la etapa alcanzada **−0,018 ± 0,008** por equipo a favor de la capa anclada (ocho de doce ediciones; −0,015 ± 0,010 en las ocho de 2021 en adelante, las únicas fuera de muestra para los hiperparámetros de la capa); el del campeón, −0,03 ± 0,13 (ruido). Offsets netos frente al Brasileirão en 2026: Argentina −0,20, Ecuador −0,56, Colombia −0,59, Paraguay −0,72, Uruguay −0,78, Chile −0,81, Bolivia −1,16, Perú −1,19, Venezuela −1,37 | `fit_extra_leagues.py`, `europe_fit.py sudamerica`, `conmebol_backtest.py` |
 
 ## Lectura de la segunda etapa
 

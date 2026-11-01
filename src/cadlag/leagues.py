@@ -218,6 +218,8 @@ CORE_LEAGUES = ["eng.1", "esp.1", "ita.1", "ger.1", "fra.1", "eng.2", "chi.1", "
 # pero no se pronostican ni se muestran. ESPN no tiene (con ese código) Chequia, Ucrania, Eslovaquia,
 # Azerbaiyán, Croacia, Serbia, Polonia, Hungría ni Bulgaria.
 EUROPE_EXTRA = ["por.1", "ned.1", "tur.1", "bel.1", "gre.1", "aut.1", "nor.1", "sco.1", "den.1", "sui.1", "swe.1"]
+# Lo mismo para la capa sudamericana (Libertadores y Sudamericana).
+SOUTH_EXTRA = ["col.1", "uru.1", "ecu.1", "par.1", "per.1", "bol.1", "ven.1"]
 CUP_COMPETITIONS = ["uefa.champions", "uefa.europa", "uefa.europa.conf",
                     "conmebol.libertadores", "conmebol.sudamericana", "fifa.cwc"]
 

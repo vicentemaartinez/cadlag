@@ -204,12 +204,26 @@ def forecast_league(comp: str, matches=None, teams=None, n_sims=20000, refit=Fal
 
 
 def forecast(comps=None, n_sims=20000, refit=False, cups=None) -> list[dict]:
-    from .cup import CUPS, forecast_cup
+    from .cup import CUPS, GROUP_CUPS, forecast_cup
     comps = CORE_LEAGUES if comps is None else comps
-    cups = list(CUPS) if cups is None else cups
+    cups = list(CUPS) + list(GROUP_CUPS) if cups is None else cups
     matches, teams = store.load()
     WEB.mkdir(parents=True, exist_ok=True)
     index = []
+    group_cups = [c for c in cups if c in GROUP_CUPS]
+    cups = [c for c in cups if c not in GROUP_CUPS]
+    if group_cups:      # Libertadores y Sudamericana se simulan juntas
+        try:
+            from .cup_conmebol import forecast as forecast_conmebol
+            for c, f in forecast_conmebol(matches, teams, n_sims=n_sims).items():
+                if c not in group_cups:
+                    continue
+                (WEB / f"{c}.json").write_text(json.dumps(f, ensure_ascii=False, default=float))
+                index.append({k: f[k] for k in ("comp", "name", "country", "season_label", "generated_at",
+                                                "matches_played", "matches_total")})
+                print(f"{c}: {f['matches_played']}/{f['matches_total']} partidos de grupos, simulado", flush=True)
+        except Exception as e:
+            print(f"copas de la Conmebol: sin pronóstico ({e})", flush=True)
     for c in list(comps) + list(cups):
         try:
             f = (forecast_cup(c, matches, teams, n_sims=n_sims) if c in CUPS

@@ -19,6 +19,8 @@ from .sim import ucl
 from .sim.analysis import _mi_bits, _pava, _rank, _shrunk_rate, entropy_bits
 
 CUPS = {"uefa.champions": dict(name="Champions League", country="Europa")}
+# copas con fase de grupos (``cup_conmebol``): sin laboratorio, el JSON va directo al sitio
+GROUP_CUPS = ["conmebol.libertadores", "conmebol.sudamericana"]
 MODELS = store.ROOT / "models"
 ZONES = [dict(key="r16", label="Octavos", positions=list(range(1, 9))),
          dict(key="playoff", label="Playoff", positions=list(range(9, 25))),

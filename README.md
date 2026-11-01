@@ -1,7 +1,7 @@
 # càdlàg
 
 **Dónde termina cada equipo.** Probabilidades de la posición final en nueve ligas de fútbol y
-de hasta dónde llega cada equipo en la Champions League, calculadas con un modelo bayesiano
+de hasta dónde llega cada equipo en la Champions, la Libertadores y la Sudamericana, calculadas con un modelo bayesiano
 dinámico de goles y tiros al arco y 20.000 temporadas simuladas con las reglas reales de cada
 competición.
 
@@ -10,7 +10,8 @@ competición.
 ![Matriz de posiciones finales de la Premier League con el laboratorio "¿Y si…?"](docs/img/matriz.png)
 
 Premier League, LaLiga, Serie A, Bundesliga, Ligue 1, Championship, Liga de Primera (Chile),
-Brasileirão, Liga Profesional argentina y Champions League, actualizadas cada dos horas.
+Brasileirão, Liga Profesional argentina, Champions League, Copa Libertadores y Copa Sudamericana,
+actualizadas cada dos horas.
 
 ## Qué tiene de interesante
 
@@ -25,14 +26,14 @@ Brasileirão, Liga Profesional argentina y Champions League, actualizadas cada d
   Championship, zonas, llaves y promedios del fútbol argentino, descuentos de puntos.
 - **"¿Y si…?" en el navegador.** Fijar resultados repondera las 20.000 temporadas sin volver
   a simular.
-- **Una escala común para Europa.** En la Champions, cada equipo parte de su fuerza doméstica
-  (16 ligas europeas modeladas) más el nivel de su liga en Europa; los pocos sin liga modelada se
-  estiman solo con sus partidos europeos. Anclar a la liga mejora la predicción de los partidos UEFA fuera de
+- **Una escala común por continente.** En las copas, cada equipo parte de su fuerza doméstica
+  (16 ligas europeas y 10 sudamericanas modeladas) más el nivel de su liga en el continente; los
+  pocos sin liga modelada se estiman solo con sus partidos de copa. Anclar a la liga mejora la predicción de los partidos UEFA fuera de
   muestra.
 - **Ligas comparadas como una red eléctrica.** Los partidos de copa y los ascensos forman un grafo;
   su laplaciano da la fuerza relativa de cada liga y cuánta información las conecta.
 
-La formulación, las demostraciones y todos los resultados (R1–R20, incluidos los negativos) están
+La formulación, las demostraciones y todos los resultados (R1–R21, incluidos los negativos) están
 en [`docs/teoria.md`](docs/teoria.md).
 
 ## Uso

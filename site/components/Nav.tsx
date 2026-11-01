@@ -55,7 +55,7 @@ export default function Nav({ summary, topTeam, lambda2 }: { summary: NavSummary
   );
   const panels: Record<Panel, React.ReactNode> = {
     ligas: <>{col("Europa", 0, EUROPE.filter(has).map((c, i) => L(c, i + 1)))}{col("Sudamérica", 1, SOUTH.filter(has).map((c, i) => L(c, i + 2)))}</>,
-    copas: <>{col("Europa", 0, CUPS.filter(has).map((c, i) => L(c, i + 1)))}</>,
+    copas: <>{col("Europa", 0, CUPS.filter((c) => has(c) && c.startsWith("uefa")).map((c, i) => L(c, i + 1)))}{col("Sudamérica", 1, CUPS.filter((c) => has(c) && c.startsWith("conmebol")).map((c, i) => L(c, i + 2)))}</>,
     modelo: <>
       {col("Cómo funciona", 0, [A("/#metodo", 1, "De los goles a la tabla", "4 pasos"), A("/#trayectoria", 2, "Una temporada", "Chile 2026")])}
       {col("Qué tan bien predice", 1, [A("/#resultados", 2, "Resultados", "contra Bet365"), A("/#resultados", 3, "Lo que no estaba", "4 hipótesis")])}

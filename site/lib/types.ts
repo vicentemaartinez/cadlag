@@ -44,7 +44,7 @@ export type League = {
 };
 
 export type IndexLeague = {
-  comp: string; season_label: string; matches_played: number; matches_total: number; last_result: string | null; S: number; cup?: boolean;
+  comp: string; season_label: string; matches_played: number; matches_total: number; last_result: string | null; S: number; cup?: boolean; kind?: "groups";
   teams: { id: string; name: string; p: number[]; asc?: number; title?: number; champion?: number }[];
 };
 

@@ -1,0 +1,8 @@
+# Llaves definidas por penales: quién pasó (ESPN no trae la tanda). Se usa cuando la ronda siguiente
+# todavía no está en los datos (o es la final). comp,fecha del partido que fue a penales,ganador (nombre de ESPN)
+comp,date,winner
+conmebol.libertadores,2026-10-22,Palmeiras
+conmebol.libertadores,2026-10-23,Estudiantes de La Plata
+conmebol.sudamericana,2023-10-28,Liga de Quito
+conmebol.sudamericana,2025-11-22,Lanús
+uefa.champions,2026-05-30,Paris Saint-Germain

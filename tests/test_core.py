@@ -181,3 +181,28 @@ def test_champions_simetria_con_fuerzas_iguales():
     p = (res["stage"] == 6).mean(0)
     assert abs(p.sum() - 1) < 1e-9
     assert np.abs(p - 1 / 36).max() < 0.01                   # todos iguales: 1/36 cada uno
+
+
+def test_conmebol_cuadro_cuenta_etapas():
+    from cadlag.sim import conmebol as cm
+    n = 64
+    cups = {}
+    for c, off in ((cm.LIB, 0), (cm.SUD, 32)):
+        groups = [list(range(off + 4 * g, off + 4 * g + 4)) for g in range(8)]
+        fx = [(a, b) for g in groups for a in g for b in g if a != b]
+        todo = pd.DataFrame(fx, columns=["hi", "ai"]).assign(date=pd.Timestamp("2027-04-01", tz="UTC"))
+        cups[c] = cm.Cup(c, 2027, groups, pd.DataFrame(columns=["hi", "ai", "hg", "ag"]), todo, {})
+    st = cm.ConmebolState(2027, list(range(n)), cups)
+    att = np.random.default_rng(2).normal(0, 0.3, n)
+
+    def draw(S, rng):
+        return dict(att=np.tile(att, (S, 1)), dfn=np.tile(att, (S, 1)), mu=np.full(S, 0.2), eta=np.full(S, 0.3))
+    res = cm.simulate(st, draw, S=2000, seed=1)
+    lib, sud = res[cm.LIB]["stage"], res[cm.SUD]["stage"]
+    for k, cnt in enumerate([16, 8, 4, 2, 1, 1]):          # grupos fuera, octavos, ..., campeón
+        assert ((lib == k).sum(1) == cnt).all()
+    assert ((sud >= 0).sum(1) == 40).all()                  # 32 de grupos + 8 terceros de la Libertadores
+    assert ((sud >= 2).sum(1) == 16).all() and ((sud == 6).sum(1) == 1).all()
+    third = res[cm.LIB]["groups"][:, :, 2]
+    rows = np.arange(len(sud))[:, None]
+    assert (sud[rows, third] >= 1).all()                    # los terceros juegan el playoff

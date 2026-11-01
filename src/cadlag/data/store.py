@@ -127,7 +127,13 @@ def update(comps: list[str], days_back: int = 3, days_forward: int = 1,
     frames, names, stats = [], {}, []
     for comp in comps:
         for k in keys:
-            rows, n, st = espn.fetch_rows(comp, k, s, with_stats=True)
+            try:
+                rows, n, st = espn.fetch_rows(comp, k, s, with_stats=True)
+            except RuntimeError as e:   # un código que ESPN no reconoce no frena al resto
+                print(f"ESPN: {comp} {k}: {e}", flush=True)
+                if len(comps) == 1 and k == keys[0]:
+                    raise
+                break
             frames.append(rows)
             names.update(n)
             stats.append(st)

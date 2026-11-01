@@ -8,6 +8,8 @@ solo alimenta la capa europea, no hace falta reajustarlos con todo. Los tiros al
 en parte de estas ligas: el modelo usa la marginal de goles en esos partidos. Portugal se ajustó
 con 2010-2015 completo.
 
+Las ligas sudamericanas (``leagues.SOUTH_EXTRA``) se ajustan igual, partiendo también de Portugal.
+
 Uso: python scripts/fit_extra_leagues.py [ligas...]   (por defecto ``leagues.EUROPE_EXTRA``)
 """
 import sys

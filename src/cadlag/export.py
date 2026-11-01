@@ -239,6 +239,18 @@ def export_web() -> None:
                                       **({"title": t["zones"]["title"]} if "title" in t["zones"] else {}),
                                       **({"champion": t["zones"]["champion"]} if sims.get("cup") else {}))
                                  for t in d["teams"]]))
+    # copas con grupos (Libertadores, Sudamericana): el JSON del pronóstico va directo, sin laboratorio
+    from .cup import GROUP_CUPS
+    for c in GROUP_CUPS:
+        p = WEB / f"{c}.json"
+        if not p.exists():
+            continue
+        d = json.loads(p.read_text())
+        (SITE / f"{c}.json").write_text(json.dumps(d, ensure_ascii=False, separators=(",", ":")))
+        index.append(dict(comp=c, season_label=d["season_label"], cup=True, kind="groups", matches_played=d["matches_played"],
+                          matches_total=d["matches_total"], last_result=d["last_result"], S=d["n_sims"],
+                          teams=[dict(id=t["id"], name=t["name"], p=t["group_probs"] or [0, 0, 0, 0],
+                                      champion=r4(t["zones"]["champion"])) for t in d["teams"] if t["group"]]))
     (SITE / "index.json").write_text(json.dumps(dict(leagues=index, backtest=data.get("_backtest", {})),
                                                 ensure_ascii=False, separators=(",", ":")))
     (SITE / "global.json").write_text(json.dumps(data["_global"], ensure_ascii=False, separators=(",", ":")))

@@ -17,7 +17,7 @@ from __future__ import annotations
 
 import argparse
 
-from .leagues import CORE_LEAGUES, CUP_COMPETITIONS, EUROPE_EXTRA
+from .leagues import CORE_LEAGUES, CUP_COMPETITIONS, EUROPE_EXTRA, SOUTH_EXTRA
 
 
 def main(argv=None):
@@ -32,10 +32,11 @@ def main(argv=None):
     ap.add_argument("--site-sims", type=int, default=20000, help="temporadas simuladas para el laboratorio")
     ap.add_argument("--remote", action="store_true", help="estado y datos del sitio en Supabase Storage")
     a = ap.parse_args(argv)
-    from .cup import CUPS
+    from .cup import CUPS, GROUP_CUPS
+    allcups = list(CUPS) + GROUP_CUPS
     # ligas y copas pronosticadas: sin argumentos, todas; con argumentos, las nombradas
-    cups = [c for c in a.comps if c in CUPS] if a.comps else list(CUPS)
-    comps = [c for c in a.comps if c not in CUPS] if a.comps else CORE_LEAGUES
+    cups = [c for c in a.comps if c in allcups] if a.comps else allcups
+    comps = [c for c in a.comps if c not in allcups] if a.comps else CORE_LEAGUES
     a.cups = cups
 
     if a.cmd == "build":
@@ -45,7 +46,7 @@ def main(argv=None):
         print(f"{len(m)} partidos, {len(t)} equipos")
     elif a.cmd == "update":
         from .data import store
-        ch = store.update(a.comps or (CORE_LEAGUES + CUP_COMPETITIONS + EUROPE_EXTRA), days_back=a.days_back, months=a.months)
+        ch = store.update(a.comps or (CORE_LEAGUES + CUP_COMPETITIONS + EUROPE_EXTRA + SOUTH_EXTRA), days_back=a.days_back, months=a.months)
         print(f"{len(ch)} partidos nuevos o actualizados")
     elif a.cmd == "run":
         run(comps, a)
@@ -85,7 +86,7 @@ def run(comps, a):
     changed_comps: set[str] = set()
     if not a.no_update:
         # las ligas de EUROPE_EXTRA solo alimentan la capa europea de las copas: se actualizan, no se pronostican
-        ch = store.update(comps + CUP_COMPETITIONS + EUROPE_EXTRA, days_back=a.days_back, months=a.months)
+        ch = store.update(comps + CUP_COMPETITIONS + EUROPE_EXTRA + SOUTH_EXTRA, days_back=a.days_back, months=a.months)
         changed_comps = set(ch["comp"]) & (set(comps) | set(a.cups)) if len(ch) else set()
         print(f"{len(ch)} partidos nuevos o actualizados; ligas y copas afectadas: {sorted(changed_comps) or 'ninguna'}", flush=True)
         if a.remote and len(ch):

@@ -20,11 +20,11 @@ export default function Home() {
         <h1 className="hero-word">càdlàg</h1>
         <div className="hero-row">
           <p className="hero-lead">Dónde termina cada equipo, simulando {(idx.leagues[0]?.S ?? 20000).toLocaleString("es-CL")} veces lo que queda de cada liga.</p>
-          <p className="hero-meta">Nueve ligas{idx.leagues.some((l) => l.comp === "uefa.champions") ? " y la Champions" : ""} · actualizado el {upd}</p>
+          <p className="hero-meta">Nueve ligas{idx.leagues.some((l) => l.cup) ? ` y ${idx.leagues.filter((l) => l.cup).length} copas` : ""} · actualizado el {upd}</p>
         </div>
       </header>
 
-      <Flow leagues={idx.leagues} />
+      <Flow leagues={idx.leagues.filter((l) => l.kind !== "groups")} />
 
       {T && <Story T={T} />}
 

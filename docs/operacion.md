@@ -46,6 +46,11 @@ Configuración (una vez):
   vuelve a pedir ese día durante 30 días. Si ESPN nunca lo corrige, se carga en
   `data/manual/results.csv` (competición, fecha, local, visita, goles); solo se usa mientras ESPN no lo
   dé por terminado.
+- Llaves definidas por penales: ESPN no trae la tanda. Si la ronda siguiente ya está en los datos
+  se deduce sola; si no (semifinales recién jugadas, finales), se agrega el ganador en
+  `data/manual/shootouts.csv` (competición, fecha UTC del partido, ganador).
+- Libertadores y Sudamericana (`src/cadlag/sim/conmebol.py`): el pronóstico empieza cuando los
+  grupos están completos en ESPN (después de la tercera fase previa, en marzo).
 - Champions League (`src/cadlag/sim/ucl.py`), tres datos a mano:
   - `MISSING_FIXTURES`: partidos de la fase liga que ESPN no trae (en 2026-27 faltaban cinco). Se
     agregan con fecha y nombres; si después aparecen en los datos, se ignoran solos.
@@ -53,8 +58,9 @@ Configuración (una vez):
     5.º y el 7.º de la fase liga (0 = la del 1.º, 1 = la del 2.º). Sin el dato se sortea en cada
     simulación hasta que los cuartos aparecen en los datos.
   - `FINAL_HOST`: el club dueño del estadio de la final, si juega la Champions (2027: Atlético).
-- Ligas que solo alimentan la capa europea (`EUROPE_EXTRA` en `leagues.py`: Portugal, Países Bajos,
-  Turquía, Bélgica, Grecia, Austria, Noruega, Escocia, Dinamarca, Suiza, Suecia): la actualización
+- Ligas que solo alimentan una capa continental (`EUROPE_EXTRA` en `leagues.py`: Portugal, Países
+  Bajos, Turquía, Bélgica, Grecia, Austria, Noruega, Escocia, Dinamarca, Suiza, Suecia; `SOUTH_EXTRA`:
+  Colombia, Uruguay, Ecuador, Paraguay, Perú, Bolivia, Venezuela): la actualización
   las trae de ESPN igual que las demás, pero no se pronostican. Para sumar una liga nueva: agregar su
   código a `EUROPE_EXTRA`, correr una vez el flujo "traer historial de ligas nuevas"
   (`.github/workflows/backfill.yml`) con ese código y luego `python scripts/fit_extra_leagues.py <liga>`.
@@ -65,4 +71,4 @@ Configuración (una vez):
 
 - En repositorios públicos GitHub desactiva los flujos programados tras 60 días sin commits; si el
   sitio deja de actualizarse, se reactiva en Actions → "actualizar datos".
-- Una actualización completa (nueve ligas y la Champions, con las curvas de "¿Qué necesita?") toma unos 17 minutos.
+- Una actualización completa (nueve ligas y tres copas, con las curvas de "¿Qué necesita?") toma unos 22 minutos.

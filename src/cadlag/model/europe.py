@@ -1,4 +1,7 @@
-r"""Capa europea: fuerzas de los clubes de toda Europa en una escala común, para las copas UEFA.
+r"""Capa continental: fuerzas de los clubes de toda una confederación en una escala común, para sus copas.
+
+Se escribió para Europa (copas UEFA) y se usa igual para Sudamérica (``SOUTH``: Libertadores y
+Sudamericana, con el Brasileirão de referencia). Lo que sigue describe el caso europeo.
 
 Planteamiento
 -------------
@@ -50,17 +53,83 @@ import numpy as np
 import pandas as pd
 
 from ..data import store
-from ..leagues import EUROPE_EXTRA
+from ..leagues import EUROPE_EXTRA, SOUTH_EXTRA
 from .filter_shots2 import _laplace, _nb
 
 jax.config.update("jax_enable_x64", True)
 
-UEFA = ["uefa.champions", "uefa.europa", "uefa.europa.conf"]
-BIG5 = ["eng.1", "esp.1", "ita.1", "ger.1", "fra.1"]       # la Premier es la referencia
-DOMESTIC = BIG5 + EUROPE_EXTRA                               # ligas con modelo doméstico
-OFFSET_LEAGUES = DOMESTIC[1:]
-G = 2 + 2 * len(OFFSET_LEAGUES)                              # (mu, eta, A_ℓ..., D_ℓ...)
-CACHE = store.ROOT / "outputs" / "europe"
+
+@dataclass(frozen=True)
+class Region:
+    """Una confederación: sus copas, sus ligas con modelo doméstico y cómo cuenta las temporadas.
+
+    ``comps`` da la categoría del prior beta de cada copa (0, 1, 2; la 3 son las previas); ``top``
+    son las ligas fuertes (la primera es la referencia, offset 0) y ``extra`` las demás con modelo,
+    cuyos offsets tienen su propio prior centrado más abajo."""
+    name: str
+    comps: tuple
+    top: tuple
+    extra: tuple
+    calendar: bool                      # temporada = año calendario (Sudamérica) o julio-junio (Europa)
+    qual_slugs: frozenset
+    qual_contains: str = "qualifying"
+    hyper_file: str = "europe_h.npy"
+
+    @property
+    def domestic(self):
+        return list(self.top) + list(self.extra)
+
+    @property
+    def offset_leagues(self):
+        return self.domestic[1:]
+
+    @property
+    def noff(self):
+        return len(self.offset_leagues)
+
+    @property
+    def G(self):
+        return 2 + 2 * self.noff       # (mu, eta, A_ℓ..., D_ℓ...)
+
+    @property
+    def extra_mask(self):
+        return np.array([float(c not in self.top) for c in self.offset_leagues])
+
+    @property
+    def cache(self):
+        return store.ROOT / "outputs" / self.name
+
+    def season_of(self, date: pd.Timestamp) -> int:
+        if self.calendar:
+            return date.year
+        return date.year if date.month >= 7 else date.year - 1
+
+    def is_qualifying(self, slug: pd.Series) -> pd.Series:
+        s = slug.astype(str)
+        return s.isin(self.qual_slugs) | s.str.contains(self.qual_contains)
+
+    def comp_index(self, comp: str) -> int:
+        return self.comps.index(comp)
+
+
+EUROPE = Region("europe", ("uefa.champions", "uefa.europa", "uefa.europa.conf"),
+                ("eng.1", "esp.1", "ita.1", "ger.1", "fra.1"), tuple(EUROPE_EXTRA), False,
+                frozenset({"play-off-round", "playoff-round", "playoffs", "preliminary-round", "qualifying-round"}))
+# Sudamérica: las fases previas de la Libertadores y la primera fase de la Sudamericana (cruces entre
+# equipos del mismo país) cuentan como previas. Referencia: el Brasileirão.
+SOUTH = Region("sudamerica", ("conmebol.libertadores", "conmebol.sudamericana"),
+               ("bra.1", "arg.1"), ("chi.1",) + tuple(SOUTH_EXTRA), True,
+               frozenset({"first-stage", "second-stage", "third-stage", "preliminary-round"}),
+               qual_contains="qualifying", hyper_file="sudamerica_h.npy")
+REGIONS = {"europe": EUROPE, "sudamerica": SOUTH}
+
+# nombres de la capa europea que usan otros módulos
+UEFA = list(EUROPE.comps)
+BIG5 = list(EUROPE.top)
+DOMESTIC = EUROPE.domestic
+OFFSET_LEAGUES = EUROPE.offset_leagues
+G = EUROPE.G
+CACHE = EUROPE.cache
 
 HYPER_NAMES = ["mu0", "eta0", "log_qg", "log_tau", "log_voff0", "log_r", "log_qt", "logit_phi", "log_st",
                "log_v0", "beta_ucl", "beta_uel", "beta_uecl", "gamma", "log_vdom",
@@ -85,42 +154,49 @@ def pad(h):
     return np.r_[h, DEFAULT_HYPER[len(h):]] if len(h) < len(DEFAULT_HYPER) else h
 
 
-QUAL_SLUGS = {"play-off-round", "playoff-round", "playoffs", "preliminary-round", "qualifying-round"}
-
-
 def is_qualifying(slug: pd.Series) -> pd.Series:
-    """Rondas previas (hasta 2019 ESPN las trae; desde 2020 ya no)."""
-    s = slug.astype(str)
-    return s.isin(QUAL_SLUGS) | s.str.contains("qualifying")
+    """Rondas previas de las copas UEFA (hasta 2019 ESPN las trae; desde 2020 ya no)."""
+    return EUROPE.is_qualifying(slug)
 
 
 def season_of(date: pd.Timestamp) -> int:
-    return date.year if date.month >= 7 else date.year - 1
+    return EUROPE.season_of(date)
 
 
 # ----------------------------------------------------------------------------------------
 # Fuerzas domésticas (modelo oficial) en la fecha de cada partido
 # ----------------------------------------------------------------------------------------
-def domestic_states(matches: pd.DataFrame, which: str = "prod", comps=DOMESTIC) -> pd.DataFrame:
+def _hyper_file(comp: str, which: str):
+    if which == "prod":
+        return store.ROOT / "models" / f"{comp}_shots2_h.npy"
+    B = store.ROOT / "outputs" / "backtest"
+    f = B / f"{comp}_shots2_h_2016.npy"
+    if f.exists():
+        return f
+    alt = sorted(B.glob(f"{comp}_shots2_h_20*.npy"))     # Chile: ajustado con temporadas anteriores a 2020
+    return alt[0] if alt else f
+
+
+def domestic_states(matches: pd.DataFrame, which: str = "prod", comps=None, region: Region = EUROPE) -> pd.DataFrame:
     """Estado filtrado (att, def) de cada equipo tras cada partido de su liga.
 
     ``which="prod"`` usa los hiperparámetros de producción (``models/``); ``"backtest"`` los
     ajustados con temporadas anteriores a 2016 (``outputs/backtest``), para validar sin mirar el
-    futuro. Se guarda en ``outputs/europe/domestic_{which}.parquet``."""
+    futuro. Se guarda en ``outputs/<región>/domestic_{which}.parquet``."""
+    comps = region.domestic if comps is None else comps
     from ..data.events import load_stats
     from .filter import prepare
     from .filter_shots import with_shots
     from .filter_shots2 import TwoLatentShots, pad
-    CACHE.mkdir(parents=True, exist_ok=True)
-    f = CACHE / f"domestic_{which}.parquet"
+    region.cache.mkdir(parents=True, exist_ok=True)
+    f = region.cache / f"domestic_{which}.parquet"
     stats = load_stats()
     rows = []
     for comp in comps:
         ld = with_shots(prepare(matches, comp), stats)
-        hf = (store.ROOT / "models" / f"{comp}_shots2_h.npy") if which == "prod" else \
-             (store.ROOT / "outputs" / "backtest" / f"{comp}_shots2_h_2016.npy")
+        hf = _hyper_file(comp, which)
         if not hf.exists() or not (matches["comp"] == comp).any():   # liga sin modelo o sin datos todavía
-            print(f"[europa] {comp}: sin modelo o sin datos, sus equipos quedan con estado propio", flush=True)
+            print(f"[{region.name}] {comp}: sin modelo o sin datos, sus equipos quedan con estado propio", flush=True)
             continue
         mod = TwoLatentShots(ld, pad(np.load(hf)))
         _, _, o = mod.run()
@@ -135,7 +211,7 @@ def domestic_states(matches: pd.DataFrame, which: str = "prod", comps=DOMESTIC) 
             cad = PP[:, 0, 1] + k * PP[:, 0, 3] + k * PP[:, 2, 1] + k ** 2 * PP[:, 2, 3]
             rows.append(pd.DataFrame(dict(comp=comp, team=[ld.team_ids[i] for i in d[side]], date=d["date"].to_numpy(),
                                           att=att, dfn=dfn, va=va, vd=vd, cad=cad)))
-        print(f"[europa] estados domésticos {comp}: {len(d)} partidos", flush=True)
+        print(f"[{region.name}] estados domésticos {comp}: {len(d)} partidos", flush=True)
     t = pd.concat(rows, ignore_index=True)
     t["date"] = pd.to_datetime(t["date"], utc=True)
     t = t.sort_values("date").reset_index(drop=True)
@@ -143,13 +219,14 @@ def domestic_states(matches: pd.DataFrame, which: str = "prod", comps=DOMESTIC) 
     return t
 
 
-def load_domestic(matches: pd.DataFrame | None = None, which: str = "prod", refresh: bool = False) -> pd.DataFrame:
-    f = CACHE / f"domestic_{which}.parquet"
+def load_domestic(matches: pd.DataFrame | None = None, which: str = "prod", refresh: bool = False,
+                  region: Region = EUROPE) -> pd.DataFrame:
+    f = region.cache / f"domestic_{which}.parquet"
     if f.exists() and not refresh:
         return pd.read_parquet(f)
     if matches is None:
         matches, _ = store.load()
-    return domestic_states(matches, which)
+    return domestic_states(matches, which, region=region)
 
 
 # ----------------------------------------------------------------------------------------
@@ -161,6 +238,7 @@ class EuroData:
     teams: list                  # ids ESPN de los equipos con estado latente propio
     arr: dict                    # arreglos para el scan
     season0: int = 0             # temporada que corresponde a si = 0
+    region: Region = EUROPE
 
 
 def _lookup(dom: pd.DataFrame, team, date, max_days):
@@ -181,10 +259,10 @@ def _lookup(dom: pd.DataFrame, team, date, max_days):
 
 
 def build(matches: pd.DataFrame, dom: pd.DataFrame, max_days: int = 120, upto=None,
-          extra: pd.DataFrame | None = None) -> EuroData:
+          extra: pd.DataFrame | None = None, region: Region = EUROPE) -> EuroData:
     """Arma los arreglos del filtro con los partidos UEFA terminados (y, si se da ``extra``, partidos
     por jugar al final, con peso 0, para obtener su predictiva)."""
-    d = matches[matches["comp"].isin(UEFA) & matches["finished"]].copy()
+    d = matches[matches["comp"].isin(region.comps) & matches["finished"]].copy()
     if upto is not None:
         d = d[d["date"] <= upto]
     d["w"] = 1.0
@@ -200,7 +278,7 @@ def build(matches: pd.DataFrame, dom: pd.DataFrame, max_days: int = 120, upto=No
     dom = dom.copy()
     dom["day"] = pd.to_datetime(dom["date"], utc=True).dt.tz_convert(None)
     by = {k: g.reset_index(drop=True) for k, g in dom.groupby("team")}
-    lidx = {c: i for i, c in enumerate(DOMESTIC)}
+    lidx = {c: i for i, c in enumerate(region.domestic)}
     tix: dict = {}
     cols = {k: [] for k in ("core", "L", "att", "dfn", "va", "vd", "cad", "ti")}
     side_cols = {s: {k: [] for k in cols} for s in ("h", "a")}
@@ -208,6 +286,8 @@ def build(matches: pd.DataFrame, dom: pd.DataFrame, max_days: int = 120, upto=No
         for s, team in (("h", r.home), ("a", r.away)):
             got = _lookup(by, team, r.date, max_days)
             c = side_cols[s]
+            if got is not None and got[0]["comp"] not in lidx:
+                got = None
             if got is not None:
                 row, gap = got
                 c["core"].append(1.0); c["L"].append(lidx[row["comp"]])
@@ -220,12 +300,12 @@ def build(matches: pd.DataFrame, dom: pd.DataFrame, max_days: int = 120, upto=No
             if team not in tix:
                 tix[team] = len(tix)
             c["ti"].append(tix[team])     # todos tienen bloque: estado propio o residuo europeo
-    seasons = d["date"].map(season_of).to_numpy()
+    seasons = d["date"].map(region.season_of).to_numpy()
     season0 = int(seasons.min())
     si = seasons - season0                      # años desde la primera temporada (cuenta los saltos)
     day = ((d["date"] - d["date"].iloc[0]).dt.total_seconds() / 86400).to_numpy()
-    comp = d["comp"].map({c: i for i, c in enumerate(UEFA)}).to_numpy().copy()
-    comp[is_qualifying(d["slug"]).to_numpy()] = 3            # previas: prior propio (beta_qual)
+    comp = d["comp"].map({c: i for i, c in enumerate(region.comps)}).to_numpy().copy()
+    comp[region.is_qualifying(d["slug"]).to_numpy()] = 3     # previas: prior propio (beta_qual)
     arr = dict(x=d["hg"].to_numpy(float), y=d["ag"].to_numpy(float), w=d["w"].to_numpy(float),
                neu=d["neutral"].fillna(False).astype(float).to_numpy(), day=day, si=si,
                new=np.r_[True, si[1:] != si[:-1]], comp=comp)
@@ -235,7 +315,7 @@ def build(matches: pd.DataFrame, dom: pd.DataFrame, max_days: int = 120, upto=No
     for s in ("h", "a"):
         d[f"core_{s}"] = arr[f"core_{s}"]
     d["season"] = seasons
-    return EuroData(d, list(tix), arr, season0)
+    return EuroData(d, list(tix), arr, season0, region)
 
 
 # ----------------------------------------------------------------------------------------
@@ -247,19 +327,19 @@ def _ll(z, x, y, r):
 
 _g = jax.grad(_ll)
 _h = jax.hessian(_ll)
-NOFF = len(OFFSET_LEAGUES)
-EXTRA_MASK = np.array([float(c not in BIG5) for c in OFFSET_LEAGUES])
+NOFF = EUROPE.noff
 
 
-def _offset_rows(L, sign_att):
-    """Fila (G,) que suma A_ℓ (o D_ℓ) del equipo de la liga L (0 = Premier, sin offset)."""
-    v = jnp.zeros(G)
-    j = jnp.maximum(L - 1, 0)
-    on = (L > 0).astype(float)
-    return v.at[2 + j].add(on) if sign_att else v.at[2 + NOFF + j].add(on)
+def make_filter(nT: int, chunk: int = 128, region: Region = EUROPE):
+    G, NOFF, EXTRA_MASK = region.G, region.noff, region.extra_mask
 
+    def _offset_rows(L, sign_att):
+        """Fila (G,) que suma A_ℓ (o D_ℓ) del equipo de la liga L (0 = la referencia, sin offset)."""
+        v = jnp.zeros(G)
+        j = jnp.maximum(L - 1, 0)
+        on = (L > 0).astype(float)
+        return v.at[2 + j].add(on) if sign_att else v.at[2 + NOFF + j].add(on)
 
-def make_filter(nT: int, chunk: int = 128):
     def run(h, arr):
         hp = unpack(h)
         beta = hp["beta"]
@@ -348,7 +428,7 @@ class EuroFilter:
         self.ed = ed
         self.h = pad(DEFAULT_HYPER if h is None else h)
         self.arr = {k: jnp.asarray(v) for k, v in ed.arr.items()}
-        self._run = make_filter(max(len(ed.teams), 1))
+        self._run = make_filter(max(len(ed.teams), 1), region=ed.region)
         self._jrun = jax.jit(lambda h: self._run(h, self.arr))
 
     def fit(self, mask=None, maxiter=200, l2=1e-3, verbose=True):
@@ -366,7 +446,7 @@ class EuroFilter:
         res = minimize(fun, self.h, jac=True, method="L-BFGS-B", options=dict(maxiter=maxiter, ftol=1e-10, gtol=1e-6))
         self.h = res.x
         if verbose:
-            print(f"[europa] -logp/partido = {res.fun / float(w.sum()):.4f} ({res.nit} iter)", flush=True)
+            print(f"[{self.ed.region.name}] -logp/partido = {res.fun / float(w.sum()):.4f} ({res.nit} iter)", flush=True)
         return res
 
     def run(self):
@@ -393,13 +473,14 @@ class Strengths:
     P: np.ndarray               # (n, 2, 2)
     mg: np.ndarray; Pg: np.ndarray
     r: float
+    noff: int = NOFF
 
     def _off(self, g):
         """Offsets (S, n) de ataque y defensa a partir de los parámetros globales g (S, G)."""
         S = g.shape[0]; n = len(self.teams)
         oa, od = np.zeros((S, n)), np.zeros((S, n))
         for i in np.where(self.core & (self.L > 0))[0]:
-            oa[:, i] = g[:, 2 + self.L[i] - 1]; od[:, i] = g[:, 2 + NOFF + self.L[i] - 1]
+            oa[:, i] = g[:, 2 + self.L[i] - 1]; od[:, i] = g[:, 2 + self.noff + self.L[i] - 1]
         return oa, od
 
     def draw(self, S, rng):
@@ -429,22 +510,24 @@ def strengths_at(ef: "EuroFilter", final, dom: pd.DataFrame, teams: list, date: 
     """Estado en ``date`` (después de los partidos UEFA ya filtrados en ``final``)."""
     hp = ef.params()
     mg, Pg, TM, TP, Tl, Ts, Tc, lastday = final
-    ed = ef.ed
+    ed = ef.ed; rg = ed.region
     day = (date - ed.matches["date"].iloc[0]).total_seconds() / 86400
-    si = season_of(date) - ed.season0
-    ci = UEFA.index(comp)
-    Pg = Pg + np.eye(G) * hp["qg"] * max(day - float(lastday), 0)
+    si = rg.season_of(date) - ed.season0
+    ci = rg.comp_index(comp)
+    Pg = Pg + np.eye(rg.G) * hp["qg"] * max(day - float(lastday), 0)
     if si > int(ed.arr["si"].max()):
-        Pg = Pg + np.diag(np.r_[0.0, 0.0, np.ones(2 * NOFF)]) * hp["tau"] ** 2
+        Pg = Pg + np.diag(np.r_[0.0, 0.0, np.ones(2 * rg.noff)]) * hp["tau"] ** 2
     dom = dom.copy(); dom["day"] = pd.to_datetime(dom["date"], utc=True).dt.tz_convert(None)
     by = {k: g.reset_index(drop=True) for k, g in dom.groupby("team")}
     tix = {t: i for i, t in enumerate(ed.teams)}
-    lidx = {c: i for i, c in enumerate(DOMESTIC)}
+    lidx = {c: i for i, c in enumerate(rg.domestic)}
     n = len(teams)
     core = np.zeros(n, bool); L = np.zeros(n, int); m = np.zeros((n, 2)); P = np.zeros((n, 2, 2))
     beta = np.asarray(hp["beta"]); gam = hp["gamma"]
     for k, t in enumerate(teams):
         got = _lookup(by, t, date, max_days)
+        if got is not None and got[0]["comp"] not in lidx:
+            got = None
         c = got is not None
         # bloque propio del equipo (residuo si tiene liga, fuerza si no)
         b, v0, phi, st = (0.0, hp["vu"], hp["phiu"], hp["su"]) if c else (beta[ci], hp["v0"], hp["phi"], hp["st"])
@@ -465,4 +548,4 @@ def strengths_at(ef: "EuroFilter", final, dom: pd.DataFrame, teams: list, date: 
             P[k] = gam ** 2 * np.array([[row["va"], row["cad"]], [row["cad"], row["vd"]]]) + uP + np.eye(2) * hp["vdom"] / 2
         else:
             m[k], P[k] = um, uP
-    return Strengths(list(teams), core, L, m, P, np.asarray(mg), np.asarray(Pg), float(hp["r"]))
+    return Strengths(list(teams), core, L, m, P, np.asarray(mg), np.asarray(Pg), float(hp["r"]), rg.noff)
