@@ -1,0 +1,38 @@
+\chapter{Ligas con ascenso, zonas y promedios}
+\label{cap:formatos}
+
+Las cinco grandes ligas europeas, Chile y Brasil se definen por una tabla de todos contra todos. La Championship y la Liga Profesional argentina tienen formatos que obligan a simular más que una tabla.
+
+\section{Championship}
+\label{sec:champ}
+
+\parrafo{Reglas.} 24 equipos y 46 fechas. Ascienden directo los dos primeros y un tercero por playoffs; descienden los tres últimos. Desde 2026-27 los playoffs son de seis equipos: 5.º contra 8.º y 6.º contra 7.º a partido único en casa del mejor ubicado; el 3.º enfrenta al peor ubicado de los ganadores y el 4.º al otro, a ida y vuelta con la vuelta en casa del mejor ubicado; final única en Wembley. Hasta 2025-26 eran cuatro equipos (3.º-6.º y 4.º-5.º a ida y vuelta), el formato que se usa en los backtests. El resultado de cada simulación es la posición en la tabla y si el equipo asciende; $P(\text{ascenso})=P(\text{1.º o 2.º})+P(\text{gana los playoffs})$.
+
+\parrafo{Descendidos frente a ascendidos.} \conj El prior de un equipo nuevo en la liga trataba igual a todos los que llegan. En la Championship llegan dos poblaciones muy distintas: los tres descendidos de la Premier y los tres ascendidos de League One. Entre 2011 y 2025 los descendidos promediaron 1,60 puntos por partido en su primera temporada, los ascendidos 1,22 y los que se quedaron 1,35 (45, 45 y 270 temporadas-equipo). Por eso los que vienen de la división superior reciben su propio prior en el bloque de tiros, $(a,b)\sim\N\big((a_\text{desc},b_\text{desc}),\,v_\text{desc}I\big)$, con tres hiperparámetros más que se ajustan con el resto. Usar además la fuerza que el equipo tenía en la Premier aporta poco: su correlación con los puntos por partido en la Championship es 0,20 (45 casos). Se explica porque el descenso ya selecciona a los peores de la Premier y la regresión a la media hace el resto. El ajuste fuera de muestra separa claramente las dos poblaciones (R18): descendidos $a=+0{,}10$, $b=+0{,}13$; ascendidos $a=0{,}00$, $b=-0{,}05$.
+
+\parrafo{Descuentos de puntos.} La EFL descuenta puntos por administración o por infringir las reglas financieras, y ESPN no los refleja. Se cargan a mano con la fecha del anuncio (tabla~\ref{tab:manual}): la tabla y las simulaciones parten de ellos, y en los backtests un pronóstico hecho antes del anuncio no los conoce, mientras que la tabla final, que es el blanco, sí los incluye. Entre 2009-10 y 2026-27 hay catorce descuentos cargados, de 2 a 12 puntos.
+
+\section{Argentina}
+\label{sec:argentina}
+
+\parrafo{Formato desde 2025.} Un año tiene dos torneos, Apertura y Clausura. Los 30 equipos se dividen en dos zonas de 15, con 14 partidos de zona y 2 interzonales (el clásico y uno sorteado): 16 fechas por torneo, y el Clausura repite el fixture del Apertura con las localías invertidas. Los 8 primeros de cada zona juegan octavos cruzados (1.ºA-8.ºB, 1.ºB-8.ºA, 2.ºA-7.ºB, \dots), cuartos y semifinales a partido único en casa del mejor ubicado y una final neutral, con alargue y penales. La tabla anual suma la fase regular de los dos torneos.
+
+\parrafo{Descensos.} Descienden dos equipos: el último de los promedios y el último de la tabla anual; si son el mismo, el penúltimo de la tabla anual. El promedio de $i$ es
+\[
+\pi_i=\frac{P_i^{(t-2)}+P_i^{(t-1)}+P_i^{(t)}}{J_i^{(t-2)}+J_i^{(t-1)}+J_i^{(t)}},
+\]
+con los puntos $P$ y partidos $J$ de fase regular de las tres últimas temporadas en Primera, o las que tenga. Los dos años anteriores entran como constantes y el año en curso sale de cada temporada simulada. Un empate en el último lugar se define en un partido neutral.
+
+\parrafo{Simulación.} Lo que cambia respecto de las demás ligas está en \code{sim/split.py}:
+\begin{enumerate}
+\item La zona de cada equipo se infiere del fixture: dos equipos de la misma zona comparten casi todos sus rivales y dos de zonas distintas casi ninguno. Basta agrupar por la matriz de rivales comunes.
+\item ESPN publica el Clausura por tramos. Los partidos que faltan se completan con el Apertura invertido, y en el sitio no se presentan como partidos reales.
+\item En cada temporada simulada se arman las tablas de zona del torneo en curso, se juega la llave con las fuerzas de esa simulación (los cruces ya jugados quedan fijos con su ganador real) y se calculan promedios y tabla anual.
+\end{enumerate}
+La matriz del sitio es la de la tabla anual, que decide descensos y copas; campeón del torneo, clasificación a playoffs y descenso van como columnas aparte, y una vista alternativa muestra la matriz de cada zona.
+
+\parrafo{Copas del año siguiente.} Desde 2026 van a la Libertadores los campeones del Apertura, del Clausura y de la Copa Argentina y, por la tabla anual sin contar a los ya clasificados, el 1.º y el 2.º (fase de grupos) y el 9.º (fase previa); a la Sudamericana van del 3.º al 8.º. En cada simulación se recorre la tabla anual saltando al campeón ya conocido y al campeón simulado del torneo en curso. La Copa Argentina no se simula: su campeón se agrega a mano cuando se conoce.
+
+\section{Ligas de año calendario}
+
+Chile y Brasil juegan de febrero a diciembre. El único cambio es la definición de temporada (el año calendario) y el momento del salto entre temporadas. En Chile, donde el filtro tiene menos partidos por temporada y más rotación de planteles, los hiperparámetros reflejan esa diferencia: la reversión entre temporadas es más fuerte ($\varphi_s=0{,}85$ frente a $0{,}96$ en la Premier, tabla~\ref{tab:hiper_dos}).

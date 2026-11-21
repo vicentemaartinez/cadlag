@@ -152,10 +152,14 @@ def forecast_league(comp: str, matches=None, teams=None, n_sims=20000, refit=Fal
         tpts, tpj = tournament_table_now(st)
     champ_entropy = an.entropy_bits(X["title"].mean(0) if X is not None else M[:, 0])
     rows = []
+    # "¿qué necesita?" solo para equipos con partidos de fase regular por jugar (en Argentina, con la
+    # fase regular terminada, ya solo queda la llave)
+    pending = set(st.todo["hi"].tolist()) | set(st.todo["ai"].tolist())
     for i, t in enumerate(st.teams):
         r = tab.iloc[i].to_dict()
         needs = {}
-        for key, pc in an.need_curves(res, st, i, n_rel, league, mT, PT, hp, ld.N, seed=seed).items():
+        curves = an.need_curves(res, st, i, n_rel, league, mT, PT, hp, ld.N, seed=seed) if i in pending else {}
+        for key, pc in curves.items():
             needs[key] = dict(points_for_50=pc.attrs.get("need_50"), points_for_90=pc.attrs.get("need_90"),
                               curve=[[int(g), round(float(q), 4), round(float(pr), 5)] for g, q, pr in
                                      zip(pc["points_gained"], pc["p_objective"], pc["p_reach"])])

@@ -1,0 +1,60 @@
+\chapter{Arquitectura}
+\label{cap:arq}
+
+\section{Visión general}
+
+El sistema tiene dos mitades que no comparten ejecución: un motor en Python que corre en GitHub Actions y un sitio estático que se compila en Vercel (figura~\ref{fig:arq}). Entre ellas solo hay archivos en Supabase Storage. El repositorio guarda código y nada más: los datos que cambian viven en dos buckets, uno privado con el almacén de partidos y otro público con lo que el sitio necesita.
+
+\begin{figure}[h]
+\centering
+\begin{tikzpicture}[
+  box/.style={draw=cdblue!60,fill=cdbluebg,rounded corners=2pt,align=center,font=\sffamily\scriptsize,minimum height=0.9cm,text width=2.5cm},
+  st/.style={box,draw=cdpurple!60,fill=cdboxbg},
+  arr/.style={-{Stealth[length=4pt]},cdgray,line width=0.6pt},
+  lab/.style={font=\sffamily\tiny,text=cdgray}]
+\node[box] (espn) at (0,0) {API de ESPN};
+\node[box] (gh) at (3.6,0) {GitHub Actions\\ \code{cadlag run --remote}\\ cada 2 horas};
+\node[st] (priv) at (3.6,-1.9) {Supabase\\ \code{cadlag-state}\\ (privado)};
+\node[st] (pub) at (7.2,0) {Supabase\\ \code{cadlag-data}\\ (público)};
+\node[box] (vercel) at (10.8,0) {Vercel: compila\\ Next.js estático};
+\node[box] (nav) at (10.8,-1.9) {Navegador:\\ matrices y laboratorio};
+\draw[arr] (espn) -- node[above,lab]{resultados} (gh);
+\draw[arr] ([xshift=-3pt]gh.south) -- node[left,lab]{almacén} ([xshift=-3pt]priv.north);
+\draw[arr] ([xshift=3pt]priv.north) -- ([xshift=3pt]gh.south);
+\draw[arr] (gh) -- node[above,lab]{JSON y .sims.gz} (pub);
+\draw[arr] (gh.north) to[bend left=22] node[above,lab]{deploy hook} (vercel.north);
+\draw[arr] (pub) -- node[above,lab]{fetch-data} (vercel);
+\draw[arr] (vercel) -- (nav);
+\end{tikzpicture}
+\caption{Arquitectura. El motor corre cada dos horas en GitHub Actions, guarda el almacén en un bucket privado y publica los datos del sitio en uno público; un hook de Vercel recompila el sitio, que descarga esos datos durante la compilación.}
+\label{fig:arq}
+\end{figure}
+
+\section{El ciclo de actualización}
+
+El flujo programado (\code{.github/workflows/update.yml}) corre a los 17 minutos de cada hora par (UTC) y ejecuta \code{cadlag run --remote}:
+
+\begin{enumerate}
+\item descarga el almacén de partidos desde el bucket privado;
+\item trae de ESPN los resultados de los últimos tres días, con sus estadísticas, y completa los días recientes a los que les falte algo;
+\item si cambió alguna liga que se pronostica o alguna copa, vuelve a filtrar y simular solo esas competiciones, exporta los JSON y las simulaciones del sitio, los sube al bucket público y llama al \emph{deploy hook} de Vercel;
+\item si no hubo resultados nuevos, termina en unos dos minutos.
+\end{enumerate}
+
+Una actualización completa (nueve ligas y tres copas, con las curvas de ``qué necesita'') toma unos 22 minutos en la máquina de GitHub. Los hiperparámetros no se reajustan en cada corrida: están en \code{models/} y se reajustan a mano, con los scripts del apéndice~\ref{ap:repro}, cuando cambia el modelo. Un segundo flujo manual (\code{backfill.yml}) trae el historial completo de una liga nueva desde ESPN, porque algunos servidores de desarrollo no llegan a la API.
+
+Las credenciales viven solo en los secretos de GitHub Actions: la URL y la clave de servicio de Supabase y el hook de Vercel. Vercel solo conoce la URL pública del bucket de datos.
+
+\section{El motor}
+
+\parrafo{Pila.} Python 3.12; JAX con precisión doble para los filtros y sus gradientes; NumPy para la simulación vectorizada; Numba para el comparador de desempates; SciPy (L-BFGS-B) para el ajuste; HiGHS para las cotas enteras; NumPyro para la validación con NUTS; pandas y Parquet para los datos.
+
+\parrafo{Módulos.} El código se organiza por capas (tabla~\ref{tab:modulos} del apéndice): \code{data/} descarga, limpia y guarda; \code{model/} contiene los filtros (núcleo, oficial, capa continental) y los análisis de estructura; \code{sim/} la simulación de temporadas, formatos especiales y copas; \code{eval/} las reglas de puntuación y el backtest; y \code{pipeline.py}, \code{export.py}, \code{cli.py} y \code{remote.py} orquestan el pronóstico, la exportación al sitio, la línea de comandos y el almacenamiento remoto.
+
+\parrafo{Un motor por liga.} Cada liga se pronostica con un objeto \code{Engine} que esconde qué modelo usa (el oficial, salvo que la regla de selección devuelva la liga al núcleo) y ofrece cuatro operaciones: filtrar la historia, pasar de temporada, simular y resumir fuerzas. La capa continental pide a cada \code{Engine} doméstico los estados $(a,b,f,g)$ de cada equipo después de cada partido, que el filtro oficial devuelve como subproducto del \code{scan}.
+
+\parrafo{Costo.} Filtrar una liga completa (unos 6.000 partidos) toma segundos una vez compilado; el ajuste de sus 19 hiperparámetros, minutos. Lo caro es la simulación: 20.000 temporadas por liga, más las del remuestreo condicional de ``qué necesita'' para cada equipo y objetivo, que dominan el tiempo de una actualización.
+
+\section{Pruebas}
+
+La suite de \code{pytest} cubre lo que más fácilmente se rompe en silencio: la conservación de masa de Dixon–Coles y que su muestreo coincida con la función de probabilidad; que la predictiva posterior con covarianza nula sea el plug-in y que con covarianza positiva sea más dispersa; que RPS y Brier sean propios y que el método de Shin dé probabilidades que suman uno; el comparador de desempates contra casos del reglamento (la Premier mira la diferencia de gol antes que la minitabla, LaLiga al revés y recalcula la minitabla de tres, Brasil empieza por victorias); la descomposición de Hodge (sin componente armónica en el grafo completo, armónica pura en un ciclo sin triángulos); los conteos del cuadro de la Champions y su simetría con fuerzas iguales; y los conteos de la Libertadores y la Sudamericana, incluido el playoff entre copas y el formato del archivo de simulaciones de la fase de grupos.

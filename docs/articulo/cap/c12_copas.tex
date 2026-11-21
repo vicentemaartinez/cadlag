@@ -1,0 +1,33 @@
+\chapter{Simular una copa}
+\label{cap:copas}
+
+Con las fuerzas en escala común, una copa se simula igual que una liga: cada edición simulada sortea una vez los parámetros globales, la fuerza doméstica y el residuo de cada equipo, y con eso juega lo que falta. Lo que cambia es el formato.
+
+\section{Champions League}
+
+\parrafo{Fase liga.} Desde 2024-25 la Champions tiene una fase liga de 36 equipos con ocho partidos cada uno. Se juegan los que faltan y se ordena la tabla con los desempates del reglamento: puntos, diferencia de gol, goles, goles de visita, victorias, victorias de visita, y luego puntos, diferencia y goles de los rivales enfrentados. El \emph{fair play} y el coeficiente no se modelan. Los ocho primeros van a octavos y del 9.º al 24.º juegan un playoff.
+
+\parrafo{Cuadro.} El playoff tiene cruces fijos (9.º-10.º contra 23.º-24.º, 11.º-12.º contra 21.º-22.º, \dots) y lo que se sortea dentro de cada par se sortea en cada simulación. Los octavos enfrentan a los ganadores del playoff con el top 8, y cuartos y semifinales son fijos dentro de cada mitad del cuadro. La vuelta es en cancha del mejor sembrado, el alargue tiene tasas de un tercio de partido y los penales son una moneda. Cuando los cruces aparecen en los datos, el cuadro se reconstruye desde ellos. Cuando se sortea el cuadro pero los cuartos todavía no están en ESPN, la mitad de cada sembrado se carga a mano (\code{BRACKET\_HALVES}) o se infiere de los cruces ya conocidos. La final es neutral salvo que juegue el dueño del estadio: la de 2027 es en el Metropolitano y, si llega, el Atlético juega de local (\code{FINAL\_HOST}).
+
+\parrafo{Partidos que faltan en los datos.} ESPN no publicó cinco partidos de la fase liga 2026-27. Se agregan a mano con fecha y nombres, y se ignoran solos si después aparecen. Un detalle que costó un error: los nombres se buscan solo entre los equipos de la edición, porque ``Liverpool'' también es un club de Montevideo que juega la Sudamericana.
+
+\parrafo{Formato antiguo.} Para validar con más ediciones se implementó también la Champions con fase de grupos (hasta 2023-24, \code{sim/ucl\_groups.py}). No se usa en producción.
+
+\section{Libertadores y Sudamericana}
+
+Las dos copas se simulan juntas (\code{sim/conmebol.py}), porque los terceros de cada grupo de la Libertadores pasan al playoff de la Sudamericana contra sus segundos. Con las mismas fuerzas sorteadas se juegan:
+
+\begin{enumerate}
+\item los grupos de ambas copas (8 grupos de 4, ida y vuelta). El desempate hasta 2025 es puntos, diferencia, goles y goles de visita; desde 2026, la minitabla entre los empatados va primero;
+\item los octavos de la Libertadores: primeros contra segundos, sin restricciones de país ni de grupo, con la vuelta en cancha del primero;
+\item el playoff de la Sudamericana (segundos de la Sudamericana contra terceros de la Libertadores) y sus octavos, con los primeros de grupo;
+\item el resto del cuadro, sorteado mientras no esté en los datos, con la vuelta para el de mejor campaña en la fase de grupos.
+\end{enumerate}
+
+Las llaves a dos partidos van directo a penales, sin alargue; la final es a partido único, neutral y con alargue. Las fases previas no se simulan: el pronóstico empieza cuando los grupos están completos en ESPN, en marzo. Como ESPN no trae las tandas de penales, el ganador de una llave definida así se deduce de la ronda siguiente o, si es la última jugada, de un archivo manual. Cuando los cruces reales de una ronda ya se conocen, mandan sobre la tabla simulada: puede haber desempates por sorteo o partidos que faltan, y el cuadro real es el que se juega.
+
+El laboratorio de la fase de grupos se describió en la capítulo~\ref{cap:escenarios}. Fuera de la fase de grupos, el sitio muestra las llaves abiertas con la probabilidad de pasar de cada lado.
+
+\section{Qué necesita un equipo en una copa}
+
+En la fase liga de la Champions, la curva de ``qué necesita'' de la sección~\ref{sec:necesita} se calcula para tres objetivos: el top 8, el top 24 y salir campeón. Para el último vale la advertencia de esa sección: la fase liga solo decide el cruce y la localía, y la ficha muestra la curva en su propia escala.

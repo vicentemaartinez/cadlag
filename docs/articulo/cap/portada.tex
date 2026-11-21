@@ -1,0 +1,43 @@
+% ---------------- portada
+\thispagestyle{empty}
+\begin{tikzpicture}[remember picture,overlay]
+  \fill[cdnavy] (current page.north west) rectangle ([yshift=-0.505\paperheight]current page.north east);
+  \shade[left color=cdrule,right color=cdlav]
+    ([yshift=-0.505\paperheight]current page.north west) rectangle ([yshift=-0.515\paperheight]current page.north east);
+  % trayectoria càdlàg: continua por la derecha, con límite por la izquierda
+  \begin{scope}[shift={([xshift=-6.3cm,yshift=-6.2cm]current page.north east)},x=0.47cm,y=0.47cm]
+    \draw[cdgray!70,line width=0.3pt] (0,0) -- (11.2,0);
+    \draw[cdgray!70,line width=0.3pt] (0,0) -- (0,8.4);
+    \foreach \a/\b/\ya/\yb in {0/1.7/1.2/1.55, 1.7/3.1/2.6/2.35, 3.1/4.3/1.6/1.9, 4.3/6.4/3.8/4.3, 6.4/7.2/3.1/3.0, 7.2/9.0/5.4/5.9, 9.0/10.6/7.2/7.45}{
+      \draw[cdsub,line width=0.9pt] (\a,\ya) -- (\b,\yb);
+      \fill[cdsub] (\a,\ya) circle (2.1pt);
+      \draw[cdsub,line width=0.7pt,fill=cdnavy] (\b,\yb) circle (2.1pt);
+    }
+    \foreach \x/\y in {1.7/2.6, 3.1/1.6, 4.3/3.8, 6.4/3.1, 7.2/5.4, 9.0/7.2}{
+      \draw[cdlav!80,line width=0.4pt,dash pattern=on 1.2pt off 1.6pt] (\x,0) -- (\x,\y);}
+  \end{scope}
+  \node[anchor=north west,text width=9.6cm,align=left] at ([xshift=2.3cm,yshift=-3.2cm]current page.north west) {%
+    {\sffamily\bfseries\small\color{cdlav}DOCUMENTO TÉCNICO Y RESULTADOS}\\[0.55cm]
+    {\fontsize{50}{56}\selectfont\sffamily\bfseries\color{white}càdlàg}\\[0.45cm]
+    {\sffamily\large\color{cdsub}\linespread{1.15}\selectfont Dónde termina cada equipo: un modelo bayesiano dinámico de goles y tiros al arco, filtrado de Laplace, simulación predictiva posterior con las reglas reales y una escala común para las copas continentales}};
+\end{tikzpicture}
+
+\vspace*{12.4cm}
+\begin{center}
+\begin{minipage}{0.86\textwidth}
+\renewcommand{\arraystretch}{1.35}
+\begin{tabularx}{\textwidth}{@{}>{\leavevmode\sffamily\bfseries\small\color{cdpurple}}p{2.5cm}L@{}}
+Pregunta & ¿Con qué probabilidad termina cada equipo en cada puesto de su liga, o en cada ronda de su copa, y cuánto se puede confiar en esos números? \\
+Datos & 189 mil partidos de ESPN entre 2010 y 2026, con tiros al arco, en 42 competiciones: 27 ligas con modelo propio, sus segundas divisiones y cinco copas continentales. Cuotas de Bet365 para comparar. \\
+Métodos & Espacio de estados con verosimilitud de Dixon–Coles y binomial negativa adelgazada; filtro de Laplace con gradientes exactos en JAX; 20.000 temporadas simuladas por liga; reponderación en el navegador. \\
+Resultado & Fuera de muestra, el modelo de dos latentes mejora al de goles en las nueve ligas (z = 5,9), queda a 0,004 de RPS de Bet365 en la Premier y su incertidumbre está calibrada. Anclar los equipos a su liga mejora los pronósticos de las copas. \\
+\end{tabularx}
+\end{minipage}
+
+\vspace{0.9cm}
+\begin{minipage}{0.86\textwidth}
+\small\color{cdgray}\linespread{1.15}\selectfont
+Este documento reúne la formulación, las demostraciones, la implementación y los resultados del proyecto, incluidos los negativos. Cada número proviene de un script del repositorio (Apéndice~\ref{ap:repro}) y se distingue entre resultados de la literatura, resultados demostrados aquí y conjeturas evaluadas con datos. El sitio está en \href{https://cadlag.vercel.app}{\color{cdblue}cadlag.vercel.app}.
+\end{minipage}
+\end{center}
+\clearpage

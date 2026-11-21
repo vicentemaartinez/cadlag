@@ -1,0 +1,78 @@
+\chapter{La capa continental}
+\label{cap:capa}
+
+En una copa se enfrentan equipos de ligas distintas: 15 de los 36 de la Champions 2026-27 juegan fuera de las cinco grandes ligas, y la Libertadores mezcla diez países. Hace falta una fuerza de cada equipo en una escala común, con su incertidumbre. La capa continental la construye a partir de las fuerzas domésticas, que ya están bien estimadas, y deja que los partidos de copa estimen solo lo que falta: el nivel de cada liga en el continente y lo que cada equipo rinde en las copas por encima o por debajo de lo que dice su liga.
+
+\section{Modelo}
+
+Cada partido de copa entre $i$ (local) y $j$ observa
+\begin{equation}
+\log\E[X]=\mu+\eta\,(1-\text{neutral})+\text{att}_i-\text{def}_j,\qquad X\sim\NB(\cdot,r),
+\label{eq:capa}
+\end{equation}
+y lo simétrico para la visita. Para un equipo de una liga $\ell$ con modelo doméstico,
+\begin{equation}
+\text{att}_i=\gamma\,\text{att}^\text{dom}_i+A_\ell+u_i,\qquad \text{def}_i=\gamma\,\text{def}^\text{dom}_i+D_\ell+v_i.
+\label{eq:anclaje}
+\end{equation}
+
+\parrafo{Fuerza doméstica linealizada.} El modelo oficial da los goles como $c+a_i-b_j+\log\sigma(\phi+f_i-g_j)$. Linealizando el último término alrededor de la conversión media,
+\[
+\log\sigma(\phi+f_i-g_j)\approx\log\sigma(\phi)+\kappa\,(f_i-g_j),\qquad \kappa=1-\sigma(\phi),
+\]
+de modo que $\text{att}^\text{dom}=a+\kappa f$ y $\text{def}^\text{dom}=b+\kappa g$, con la media y la covarianza del filtro doméstico \emph{en la fecha del partido}. La covarianza no se pierde: la incertidumbre de la fuerza doméstica entra a la verosimilitud como ruido de observación adicional, $\gamma^2$ por la varianza de la combinación lineal, más una varianza pequeña $v_\text{dom}$ que absorbe el error de la linealización.
+
+\parrafo{Offsets de liga.} $(A_\ell,D_\ell)$ son los niveles de ataque y defensa de la liga en el continente, con una liga de referencia sin offset: la Premier en Europa y el Brasileirão en Sudamérica. Las ligas fuera de las grandes de cada continente tienen su propio prior, centrado más abajo ($\text{off}_\text{extra}$, $v_\text{off,extra}$). Los offsets reciben varianza $\tau^2$ al empezar cada temporada y, junto con $\mu$ y $\eta$, un paseo aleatorio lento dentro de ella.
+
+\parrafo{Residuo continental.} $(u_i,v_i)\sim\N(0,v_u)$ es lo que el equipo rinde en las copas por encima o por debajo de lo que dice su liga: rota en la liga, juega distinto en eliminatorias, tiene un plantel más profundo. Revierte a cero entre temporadas con coeficiente $\varphi_u$. Agrega poco a la predicción ($+0{,}0016\pm0{,}0007$ nats por partido en Europa), pero es la diferencia entre ``el PSG es tan bueno como dice la Ligue 1'' y ``el PSG rinde más en Europa'', que los datos sí distinguen.
+
+\parrafo{Equipos sin liga modelada.} Para un equipo cuya liga no está en los datos (en la Champions 2026-27, Slavia, Shakhtar, Slovan y Sabah), $(\text{att}_i,\text{def}_i)$ es un estado propio. Al aparecer por primera vez tiene un prior $\N(\beta_c,v_0)$ según la copa que juega, con $c\in\{$Champions, Europa League, Conference, previas$\}$ (en Sudamérica: Libertadores, Sudamericana, previas), porque clasificar a la Champions ya dice algo de la fuerza. Dentro de la temporada hace un paseo aleatorio; entre temporadas revierte hacia $\beta_c$: tras $k$ temporadas sin jugar,
+\[
+m\leftarrow\beta_c+\varphi^k(m-\beta_c),\qquad P\leftarrow\varphi^{2k}P+s^2\,\frac{1-\varphi^{2k}}{1-\varphi^2}\,I.
+\]
+
+\section{Filtro de densidad supuesta factorizado}
+
+En Europa la capa tiene unos 590 equipos y 16 ligas con modelo doméstico. Una covarianza conjunta de todo el estado no cabe en el gradiente a través de 9.700 partidos. Se usa un filtro de densidad supuesta (ADF)~\cite{minka2001} factorizado:
+
+\begin{itemize}
+\item un \emph{bloque global} $g=(\mu,\eta,A_{1:L},D_{1:L})$ con su covarianza completa ($2+2L$ dimensiones, con $L$ las ligas con offset: 15 en Europa y 9 en Sudamérica);
+\item un bloque $2\times2$ por equipo (el residuo $(u,v)$ si tiene liga, su fuerza si no), independientes entre sí y del bloque global.
+\end{itemize}
+
+En cada partido se juntan los bloques que intervienen: el global y los de los dos equipos, $2+2L+4$ dimensiones. Se hace la actualización de Laplace de la sección~\ref{sec:laplace} exacta en ese estado local, y cada bloque se queda con su marginal. Se pierde la correlación que un partido crea entre los dos equipos y entre ellos y el bloque global, que es la aproximación de TrueSkill~\cite{herbrich2007}. A cambio cada paso cuesta $O(L^2)$, independiente del número de equipos, y el filtro europeo completo corre en dos segundos.
+
+\section{Ajuste}
+
+Los 21 hiperparámetros (apéndice~\ref{ap:hiper}) se ajustan como en la sección~\ref{sec:prequential}, por verosimilitud prequential con gradientes exactos. Para que el gradiente quepa en memoria, el \code{lax.scan} se hace por bloques de 128 partidos con \emph{checkpointing}: en la pasada hacia atrás cada bloque se recalcula en vez de guardar todos los estados intermedios. Las fuerzas domésticas que entran a la capa vienen de filtros ajustados sin mirar el período de prueba.
+
+El protocolo de evaluación separa tiempos. En Europa, los hiperparámetros se ajustan con 2011-2017 y se evalúa en 2018-2026; en Sudamérica, con 2011-2020 y se evalúa en 2021-2026. Producción usa todo. Los valores de producción más interpretables:
+
+\begin{table}[h]
+\centering
+\caption{Algunos hiperparámetros de producción de las dos capas.}
+\label{tab:capa}
+\small
+\begin{tabular}{@{}lrr@{}}
+\toprule
+\hd{Parámetro} & \hd{Europa} & \hd{Sudamérica} \\
+\midrule
+Traslado de la fuerza doméstica, $\gamma$ & $0{,}89$ & $0{,}80$ \\
+Localía, $e^\eta$ & $1{,}21$ & $1{,}50$ \\
+Prior de un debutante en la copa mayor, $\beta_1$ & $-0{,}29$ & $-0{,}05$ \\
+Prior de un debutante en las previas, $\beta_\text{prev}$ & $-0{,}87$ & $-0{,}06$ \\
+Prior del offset de una liga fuera de las grandes & $-0{,}56$ & $-0{,}45$ \\
+Reversión del residuo entre temporadas, $\varphi_u$ & $0{,}85$ & $0{,}76$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Dos lecturas. En Sudamérica la localía pesa bastante más que en Europa (altura, viajes largos, canchas más hostiles), y $\gamma<1$ dice que en las copas los equipos quedan más parejos de lo que dice su liga: el mejor equipo de una liga no se lleva a la copa toda su ventaja doméstica.
+
+\section{Ligas que solo alimentan la capa}
+
+Además de las nueve ligas que se pronostican, la capa usa el modelo oficial de once ligas europeas y siete sudamericanas que no se publican (capítulo~\ref{cap:datos}). Con eso, 32 de los 36 equipos de la Champions 2026-27 y todos los de la Libertadores y la Sudamericana parten de su liga. Sus hiperparámetros se ajustan una sola vez, con las temporadas 2012-2015 y partiendo de los de Portugal (el ajuste completo de dos latentes toma unos 40 minutos por liga en la máquina de desarrollo), y se usan igual en los backtests y en producción: no miran el período de prueba. El ajuste propio de cada liga gana $+0{,}019$ nats por partido frente a usar para todas los hiperparámetros de Portugal.
+
+\section{Una abstracción para cualquier confederación}
+
+Todo lo anterior está escrito una vez (\code{model/europe.py}) y se instancia por confederación con un objeto \code{Region}: las copas que observa, las ligas de referencia y con offset, si la temporada es el año calendario, cómo reconocer las fases previas y dónde guardar los hiperparámetros. Europa (\code{EUROPE}) y Sudamérica (\code{SOUTH}) son dos instancias del mismo código.

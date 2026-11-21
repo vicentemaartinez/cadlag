@@ -1,0 +1,93 @@
+\chapter{El modelo oficial: crear y convertir}
+\label{cap:dos}
+
+\section{Motivación}
+
+Un equipo puede tener una buena racha de goles por dos razones distintas: porque crea más ocasiones o porque convierte una fracción mayor de las que crea. La primera es fuerza; la segunda es, en buena parte, varianza que revierte. Un modelo que solo ve goles no puede separarlas y trata igual a los dos casos. El modelo oficial de \cadlag le da a cada equipo cuatro fuerzas: crear tiros al arco ($a_i$), evitarlos ($b_i$), convertirlos ($f_i$) y evitar que los recibidos sean gol ($g_i$), esta última en buena medida la del arquero. Los tiros al arco son la medición intermedia que las separa.
+
+\section{Modelo}
+
+En un partido entre $i$ (local) y $j$, los tiros al arco del local y los goles que salen de ellos son
+\begin{equation}
+\mathrm{SOT}_h\sim\NB\big(e^{c+k+a_i-b_j},\,r\big),\qquad X\mid\mathrm{SOT}_h\sim\Bin\big(\mathrm{SOT}_h,\;\sigma(\phi+f_i-g_j)\big),
+\label{eq:dos}
+\end{equation}
+y lo simétrico para la visita, sin el término de localía $k$. Aquí $c$ es el nivel de tiros al arco de la liga, $k$ la localía (que actúa sobre la creación de ocasiones) y $\phi$ el logit de la conversión media. $\NB(m,r)$ es la binomial negativa de media $m$ y forma $r$, una mezcla Poisson–Gamma que permite sobredispersión. El estado es
+\[
+x=(a_{1:N},\,b_{1:N},\,f_{1:N},\,g_{1:N},\,c,\,k,\,\phi)\in\R^{4N+3}.
+\]
+
+\section{Adelgazamiento}
+\label{sec:adelgazamiento}
+
+\begin{proposicion}[Binomial negativa adelgazada] \dem
+Si $S\mid\Lambda\sim\Pois(\Lambda)$ con $\Lambda\sim\operatorname{Gamma}(r,\,r/m)$ y $X\mid S\sim\Bin(S,p)$, entonces $X\mid\Lambda\sim\Pois(p\Lambda)$, $p\Lambda\sim\operatorname{Gamma}\big(r,\,r/(pm)\big)$ y por lo tanto $X\sim\NB(pm,\,r)$.
+\end{proposicion}
+
+\begin{proof}
+El adelgazamiento binomial de un Poisson es Poisson: $\E[s^X\mid\Lambda]=\E\big[(1-p+ps)^S\mid\Lambda\big]=e^{\Lambda p(s-1)}$, la generadora de $\Pois(p\Lambda)$. Escalar una $\operatorname{Gamma}(r,\beta)$ por $p$ da una $\operatorname{Gamma}(r,\beta/p)$, y una Poisson con media $\operatorname{Gamma}(r,r/m')$ es $\NB(m',r)$ con $m'=pm$.
+\end{proof}
+
+La consecuencia práctica es grande. La predictiva de los goles tiene forma cerrada,
+\begin{equation}
+X\sim\NB\big(e^{c+k+a_i-b_j}\,\sigma(\phi+f_i-g_j),\;r\big),
+\label{eq:marginal}
+\end{equation}
+de modo que la simulación sortea goles directamente, sin pasar por los tiros, y los partidos sin estadísticas válidas (sección~\ref{sec:sot}) actualizan el estado con esta marginal en vez de perderse. En las ligas ajustadas $r$ sale entre 100 y 150: dada la fuerza, los tiros al arco son casi Poisson, y la sobredispersión de los goles viene de la incertidumbre sobre el estado, no del conteo.
+
+\section{Filtro}
+
+La verosimilitud de un partido con estadísticas depende del estado a través de cuatro predictores,
+\[
+z=\big(c+k+a_i-b_j,\;\;c+a_j-b_i,\;\;\phi+f_i-g_j,\;\;\phi+f_j-g_i\big)\in\R^4,
+\]
+y la actualización de Laplace de la sección~\ref{sec:laplace} se aplica igual, con un Newton en $\R^4$ (ocho iteraciones con el paso acotado) y el gradiente y la hessiana de la log-verosimilitud obtenidos por diferenciación automática. Un partido sin estadísticas usa la verosimilitud~\eqref{eq:marginal}, que depende de los mismos cuatro predictores. Hay ahora cuatro invarianzas de gauge, una por bloque ($a$ con $c$, $b$ con $c$, $f$ con $\phi$, $g$ con $\phi$), y se fijan con la misma proyección oblicua, que impone suma cero en cada bloque de equipos activos.
+
+\section{Dinámica e hiperparámetros}
+
+Cada par de bloques sigue su propio paseo aleatorio (varianzas $q_s^2$ para tiros y $q_f^2$ para conversión, por día) y su propio salto entre temporadas (reversión $\varphi_s$, $\varphi_f$ y ruidos $s_s$, $s_f$). Los niveles $c,k,\phi$ caminan con $q_\text{lev}^2$. Un ascendido parte de un prior propio en el bloque de tiros y de una conversión promedio, $f=g=0$ con varianza $v_{0f}$. Desde la extensión a la Championship (sección~\ref{sec:champ}), los que descienden de la división superior tienen un prior aparte. Son 19 hiperparámetros (tabla~\ref{tab:hiper_dos}).
+
+\begin{table}[h]
+\centering
+\caption{Hiperparámetros del modelo oficial, con los valores de producción en la Premier y en Chile.}
+\label{tab:hiper_dos}
+\small
+\begin{tabularx}{\textwidth}{@{}>{\leavevmode\color{cdblue}}p{2.7cm}Lrr@{}}
+\toprule
+\hd{Parámetro} & \hd{Significado} & \hd{Premier} & \hd{Chile} \\
+\midrule
+$q_s,\;q_f$ & innovación diaria de tiros y de conversión & $0{,}0031$, $0{,}0011$ & $0{,}0021$, $0{,}0009$ \\
+$q_\text{lev}$ & innovación diaria de $c,k,\phi$ & $0{,}0005$ & $0{,}0003$ \\
+$\varphi_s,\;\varphi_f$ & reversión entre temporadas & $0{,}96$, $0{,}89$ & $0{,}85$, $0{,}78$ \\
+$s_s,\;s_f$ & ruido del salto entre temporadas & $0{,}087$, $0{,}034$ & $0{,}048$, $0{,}069$ \\
+$a_\text{asc},b_\text{asc},v_\text{asc}$ & prior de los ascendidos (tiros) & $-0{,}29$, $-0{,}21$, $0{,}021$ & $-0{,}19$, $-0{,}07$, $0{,}014$ \\
+$a_\text{desc},b_\text{desc},v_\text{desc}$ & prior de los descendidos (sección~\ref{sec:champ}) & --- & --- \\
+$v_{0s},\;v_{0f}$ & varianza inicial de cada bloque & $0{,}046$, $0{,}012$ & $0{,}012$, $0{,}022$ \\
+$c_0,\;k_0,\;\phi_0$ & niveles iniciales & \multicolumn{2}{c}{ajustados por liga} \\
+$r$ & forma de la binomial negativa & $153$ & $130$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+La conversión es una habilidad persistente, no ruido: entre equipos su desviación es de $0{,}05$ a $0{,}11$ en escala logit, con reversión entre temporadas de $0{,}76$ a $0{,}90$; la del arquero ($g$) es menor, de $0{,}03$ a $0{,}09$.
+
+\section{Objetivo del ajuste}
+
+Los hiperparámetros se ajustan como en la sección~\ref{sec:prequential}, con una diferencia deliberada: el criterio es la log-verosimilitud predictiva \emph{de los goles}, calculada con la marginal~\eqref{eq:marginal} antes de ver el partido. Los tiros entran a la actualización, no al criterio. Así el ajuste premia pronosticar goles, que es lo que decide la tabla, y no explicar tiros: si los tiros fueran poco informativos sobre los goles, el ajuste los haría irrelevantes inflando sus varianzas. Se agrega una penalización cuadrática débil hacia los valores por defecto, que solo pesa en las direcciones en que el criterio es casi plano, y el optimizador es otra vez L-BFGS-B con gradientes exactos.
+
+\begin{nota}{Por qué los tiros no comparten el predictor completo}
+Un primer modelo con tiros (\code{filter\_shots.py}, R7) los usaba como segunda medición de la misma tasa de goles, con el predictor completo $\mu+\eta+\alpha_i-\delta_j$. Empeoraba la predicción de goles: los tiros, mucho más numerosos que los goles, dominaban la estimación de $\mu$ y $\eta$, y cualquier diferencia sistemática entre tiros y goles (la localía, por ejemplo, no pesa igual) se trasladaba a los goles. La versión corregida comparte solo la parte de fuerzas. Es un ejemplo de mala especificación amplificada por una observación muy informativa, y la razón por la que el modelo oficial tiene niveles propios para tiros ($c,k$) y conversión ($\phi$).
+\end{nota}
+
+\section{Reporte en la escala de goles}
+
+Para el sitio, ataque y defensa se reportan en log-goles frente al equipo promedio, la misma escala del núcleo:
+\[
+\text{ataque}_i=a_i+\log\sigma(\phi+f_i)-\log\sigma(\phi),\qquad \text{defensa}_i=b_i+\log\sigma(\phi)-\log\sigma(\phi-g_i),
+\]
+con su desviación por el método delta a partir de la covarianza filtrada. La ficha de cada equipo muestra además las cuatro fuerzas por separado: tiros al arco por partido a favor y en contra, y conversión a favor y en contra.
+
+\section{Un solo modelo oficial}
+\label{sec:seleccion}
+
+El núcleo y el de dos latentes comparten interfaz (\code{model/engine.py}): filtrar, pasar de temporada, simular y resumir fuerzas. El oficial es el de dos latentes en todas las ligas. La regla para volver al núcleo es asimétrica a propósito: una liga vuelve solo si hay \emph{evidencia de que el de dos latentes pierde}, dos errores estándar en contra en la log-verosimilitud del marcador o en la de la posición final (\code{scripts/select\_models.py}). Elegir liga por liga el que gane por dos errores estándar trataría como señal el ruido de nueve pruebas. Con la evidencia combinada (R13, R16), lo razonable es ``ayuda un poco en todas, más en algunas'', no ``ayuda en tres y en seis no''. Hoy ninguna liga cumple la condición para volver al núcleo.

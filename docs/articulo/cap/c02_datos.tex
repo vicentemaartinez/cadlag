@@ -1,0 +1,61 @@
+\chapter{Datos}
+\label{cap:datos}
+
+\section{Partidos}
+
+Todos los resultados vienen de la API no oficial de ESPN (\code{site.api.espn.com}), la misma que usan sus aplicaciones. Su ventaja es la cobertura: una sola interfaz trae ligas europeas, sudamericanas y todas las copas continentales con identificadores de equipo globales, de modo que el mismo club tiene el mismo id en su liga y en la Champions. El almacén tiene 189 mil partidos terminados entre enero de 2010 y la fecha de este documento, en 42 competiciones:
+
+\begin{itemize}
+\item las nueve ligas que se pronostican y sus segundas divisiones, que alimentan la comparación entre ligas a través de ascensos y descensos;
+\item once ligas europeas y siete sudamericanas que solo alimentan las capas continentales (Portugal, Países Bajos, Turquía, Bélgica, Grecia, Austria, Noruega, Escocia, Dinamarca, Suiza y Suecia; Colombia, Uruguay, Ecuador, Paraguay, Perú, Bolivia y Venezuela);
+\item Champions League, Europa League y Conference League, con sus fases previas hasta 2019; Copa Libertadores y Copa Sudamericana.
+\end{itemize}
+
+Cada partido guarda fecha UTC, equipos, goles, estado (programado, terminado, suspendido, definido por penales), si la cancha es neutral y la temporada. La temporada se define por liga: las europeas van de agosto a mayo (\code{season\_style = "split"}) y las sudamericanas siguen el año calendario.
+
+Para cada partido terminado se piden además sus estadísticas: tiros, tiros al arco, posesión, córners y la línea de tiempo de goles y tarjetas. Los tiros al arco alimentan el modelo oficial (capítulo~\ref{cap:dos}) y la línea de tiempo el modelo en vivo (sección~\ref{sec:envivo}).
+
+\section{Calidad de los tiros al arco}
+\label{sec:sot}
+
+Los tiros al arco de ESPN tienen errores en bloque: temporadas enteras con ceros o con cifras imposibles. La regla de consistencia del proyecto (\code{clean\_sot}) descarta un partido si sus tiros al arco totales son cero o si algún equipo tiene menos tiros al arco que goles menos uno (se deja margen para un autogol), y descarta la temporada completa si la regla falla en más del 20\,\% de sus partidos. Un partido sin estadísticas válidas no se pierde: informa al modelo a través de la marginal de los goles (sección~\ref{sec:adelgazamiento}).
+
+\begin{nota}{Un dato que cambió una conclusión}
+La primera evaluación de los tiros al arco (R7) concluyó que no mejoraban la predicción de goles. El resultado venía de la Premier 2016-17: toda la temporada, justo el comienzo del período de prueba, tenía tiros al arco cercanos a cero, y lo mismo pasaba en 2011-12 y 2022-23. Con la regla de consistencia el mismo análisis da una ganancia significativa, y el modelo de dos latentes construido sobre los tiros terminó siendo el oficial. Desde entonces, todo resultado negativo se revisa primero contra la calidad de los datos.
+\end{nota}
+
+\section{Mercado de apuestas}
+
+Para evaluar se usan las cuotas de cierre de Bet365 de football-data.co.uk, a través del espejo de \code{xgabora/Club-Football-Match-Data-2000-2025} (licencia MIT), que también trae el Elo de ClubElo. El cruce con los partidos de ESPN es automático, por fecha y nombres normalizados (\code{data/mirror.py}). Las probabilidades implícitas se obtienen quitando el margen con el método de Shin~\cite{shin1993}, que supone una fracción de apostadores informados y corrige mejor que la normalización proporcional el sesgo hacia los resultados improbables. Las cuotas nunca entran al modelo: son la vara contra la que se mide.
+
+\section{Traspasos}
+
+Los traspasos de Transfermarkt de las cinco grandes ligas entre 2009-10 y 2025-26 (repositorio \code{eordo/transfermarkt-data}) se usan en dos análisis: como señal de pretemporada (R14) y como aristas entre ligas (R15). Ninguno resultó útil y no se usan en producción.
+
+\section{Datos a mano}
+
+Algunas cosas que deciden una tabla no están en ESPN. Se cargan a mano, con fecha, y el código las ignora solo cuando los datos de ESPN las vuelven innecesarias.
+
+\begin{table}[h]
+\centering
+\caption{Datos que se mantienen a mano.}
+\label{tab:manual}
+\small
+\begin{tabularx}{\textwidth}{@{}>{\ttfamily\small}p{4.4cm}L@{}}
+\toprule
+\hd{Dónde} & \hd{Qué y por qué} \\
+\midrule
+POINT\_ADJUSTMENTS & descuentos de puntos de la EFL (administración, reglas financieras), con la fecha del anuncio: un pronóstico anterior no los conoce \\
+PROMEDIO\_BASE & puntos y partidos de las dos temporadas argentinas anteriores, desde la tabla oficial (ESPN no trae la Copa de la Liga 2024) \\
+CUP\_SPOTS & clasificados argentinos a la Libertadores por un título, para repartir los cupos de la tabla anual \\
+results.csv & resultados que ESPN deja como ``programados'' aunque se jugaron; se usan mientras ESPN no los cierre \\
+shootouts.csv & ganadores de llaves definidas por penales cuando la ronda siguiente todavía no está en los datos \\
+MISSING\_FIXTURES & partidos de la fase liga de la Champions que ESPN no publicó (cinco en 2026-27) \\
+BRACKET\_HALVES, FINAL\_HOST & mitad del cuadro de cada sembrado de la Champions tras el sorteo; club local en la final \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Almacén}
+
+Los partidos y las estadísticas se guardan en archivos Parquet. El almacén vigente vive en un bucket privado de Supabase Storage y el repositorio solo guarda código (capítulo~\ref{cap:arq}). Cada actualización trae los resultados de los últimos tres días y vuelve a pedir, durante dos meses, los días a los que les falten resultados o estadísticas: ESPN a veces cierra un partido con horas o días de retraso.

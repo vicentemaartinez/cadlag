@@ -1,0 +1,73 @@
+\chapter{La simulación predictiva posterior}
+\label{cap:sim}
+
+El filtro entrega una gaussiana $\N(m,P)$ sobre el estado de hoy. La tabla final es una función complicada de ese estado y de los resultados que faltan, y la única manera práctica de obtener su distribución es simularla. Este capítulo describe cómo se simula y por qué los detalles importan.
+
+\section{Predictiva posterior y plug-in}
+
+Hay dos maneras de simular. El \emph{plug-in} fija el estado en su media $m$ y sortea los partidos. La \emph{predictiva posterior} sortea primero el estado de $\N(m,P)$ y después los partidos. La diferencia es exactamente un término de la ley de varianza total.
+
+\begin{proposicion}[Escala de la incertidumbre paramétrica] \dem
+Sean $\mathrm{Pts}_i$ los puntos finales del equipo $i$ y $R$ los partidos que le quedan. Entonces
+\[
+\Var(\mathrm{Pts}_i)=\E\big[\Var(\mathrm{Pts}_i\mid x)\big]+\Var\big(\E[\mathrm{Pts}_i\mid x]\big).
+\]
+El plug-in conserva solo el primer término, que crece como $R$. Si la incertidumbre sobre la fuerza induce una desviación $s$ en los puntos esperados por partido, el segundo término es del orden de $R^2s^2$.
+\end{proposicion}
+
+\begin{proof}
+Dado el estado, los partidos son independientes, así que $\Var(\mathrm{Pts}_i\mid x)$ es una suma de $R$ varianzas acotadas. En cambio $\E[\mathrm{Pts}_i\mid x]=\sum_{k\le R}e_k(x)$ es una suma de $R$ términos que dependen del \emph{mismo} $x$: si cada uno tiene desviación del orden de $s$ y están positivamente correlacionados (todos suben si el equipo es mejor), la varianza de la suma es del orden de $R^2s^2$.
+\end{proof}
+
+La consecuencia es que la diferencia entre ambos modos es grande al comienzo de la temporada, cuando $R$ es grande y la fuerza está mal determinada, y se anula al final. El backtest lo confirma (R2, figura~\ref{fig:varianza}): en pretemporada el plug-in subestima la varianza de los puntos por un factor 2,03 y su intervalo de 90\,\% cubre el 76\,\% de los casos. La predictiva posterior baja el factor a 1,28 y la cobertura sube a 85\,\%.
+
+\begin{observacion}[Una vez por temporada] \dem
+El estado debe sortearse una vez por temporada simulada, no una vez por partido. Sortearlo por partido hace que los resultados de un mismo equipo sean condicionalmente independientes y elimina la correlación que genera el segundo término: equivale a un plug-in con las probabilidades predictivas de cada partido, con la misma varianza subestimada.
+\end{observacion}
+
+\section{Algoritmo}
+
+Una temporada simulada se construye así (\code{sim/season.py}):
+
+\begin{enumerate}
+\item Se extrae del estado el bloque de los equipos de la liga y los niveles, con su covarianza, y se sortea $x_0\sim\N(m,P)$ con una factorización de Cholesky.
+\item El estado se propaga hasta la fecha de cada partido pendiente con el mismo paseo aleatorio del modelo: incrementos gaussianos con varianza $q^2\Delta$ entre fechas consecutivas, acumulados. Una fuerza sorteada en octubre sigue moviéndose hasta mayo.
+\item Con el estado en la fecha de cada partido se calculan las tasas $(\lambda,\nu)$ y se sortean los goles, binomiales negativos~\eqref{eq:marginal} en el modelo oficial y Dixon–Coles por aceptación–rechazo en el núcleo.
+\item Se suman los resultados ya jugados, se arma la tabla con los desempates del reglamento y se juegan, si corresponden, partidos de definición y playoffs, con las fuerzas de esa misma simulación al final del calendario.
+\end{enumerate}
+
+Se simulan 20.000 temporadas por liga, en bloques de 1.000 para no materializar el tensor de estados de dimensión (simulaciones $\times$ partidos $\times$ estado). El error de Monte Carlo de una probabilidad $p$ es $\sqrt{p(1-p)/20.000}$, a lo sumo $0{,}35$ puntos porcentuales; el sitio muestra las probabilidades con un decimal.
+
+\section{Desempates}
+
+Cada liga define una lista ordenada de criterios (tabla~\ref{tab:desempates}). El comparador (\code{sim/tiebreak.py}, compilado con Numba~\cite{numba}) mantiene una pila de segmentos empatados: ordena el segmento por el criterio $k$, lo parte en subsegmentos con la misma clave y aplica el criterio $k+1$ a cada subsegmento con más de un equipo. Los criterios de enfrentamiento directo se calculan dentro del grupo empatado actual (la minitabla). En LaLiga, si un criterio de minitabla deja un subgrupo menor que el original todavía empatado, la minitabla se recalcula desde su primer criterio solo con ese subgrupo. Cuando se agotan los criterios modelados, decide un sorteo.
+
+\begin{table}[h]
+\centering
+\caption{Criterios de desempate por liga. PTS puntos; DG diferencia de gol; GF goles a favor; V victorias; GV goles de visita; MT: minitabla entre los empatados (puntos, diferencia, goles, goles de visita); S sorteo.}
+\label{tab:desempates}
+\small
+\begin{tabularx}{\textwidth}{@{}lL@{}}
+\toprule
+\hd{Liga} & \hd{Orden} \\
+\midrule
+Premier League & PTS, DG, GF, MT-puntos, MT-goles de visita, S \\
+LaLiga & PTS, MT-puntos, MT-DG (recalculando la minitabla), DG, GF, S \\
+Serie A & PTS, MT-puntos, MT-DG, DG, GF, S; partido de definición por el título y por el descenso \\
+Bundesliga & PTS, DG, GF, MT-puntos, MT-goles de visita, GV, S \\
+Ligue 1 & PTS, DG, MT-puntos, MT-DG, MT-GF, MT-goles de visita, GF, GV, S \\
+Championship & PTS, DG, GF, MT-puntos, MT-DG, V, GV, S \\
+Chile & PTS, DG, V, GF, GV, S; partido de definición por el título \\
+Brasileirão & PTS, V, DG, GF, MT-puntos, S \\
+Argentina (zona y tabla anual) & PTS, DG, GF, S; desempate en cancha por el descenso \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Partidos de definición y llaves}
+
+En Italia, dos equipos empatados en puntos en el primer puesto juegan un partido único, y dos empatados en el límite del descenso juegan ida y vuelta (comunicado FIGC 331/A de 2025-26). En Chile el título empatado se define en un partido. Las llaves de playoffs (Championship, torneos argentinos, copas) se juegan con las fuerzas de la misma simulación. El alargue se modela como un tercio de partido con las mismas tasas, $\NB(\lambda/3,r)$, en la cancha del partido de vuelta o neutral, y los penales como una moneda. La moneda es una simplificación deliberada: no hay evidencia sólida de que la habilidad en penales sea persistente a nivel de equipo, y el error de suponer 50\,\% es pequeño frente a la incertidumbre de llegar a la tanda.
+
+\begin{nota}{Lo que no se modela}
+El \emph{fair play} y el coeficiente UEFA como desempates, porque nunca han decidido un puesto relevante en las temporadas del backtest; el quinto cupo de Champions de Inglaterra, que depende del rendimiento de todos los clubes del país en Europa; y las sanciones que todavía no se anuncian. Cada liga anota en \code{leagues.py} qué reglas se verificaron contra el reglamento oficial y cuáles están tomadas de fuentes secundarias.
+\end{nota}

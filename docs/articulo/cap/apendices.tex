@@ -1,0 +1,154 @@
+\chapter{Reproducibilidad}
+\label{ap:repro}
+
+Todo el proyecto está en el repositorio \code{cadlag}. La librería \code{src/cadlag/} contiene los módulos, \code{scripts/} los análisis y backtests, \code{site/} el sitio y \code{docs/} la documentación, incluida la fuente de este documento (\code{docs/articulo/}, con \code{figuras.py} para regenerar las figuras desde \code{outputs/}). Cada número del texto sale de un script.
+
+\section{Estructura}
+
+\begin{table}[h]
+\centering
+\caption{Módulos de la librería \code{cadlag}.}
+\label{tab:modulos}
+\small
+\begin{tabularx}{\textwidth}{@{}>{\ttfamily\small}p{4.6cm}L@{}}
+\toprule
+\hd{Módulo} & \hd{Contenido} \\
+\midrule
+data/espn.py, store.py & descarga y limpieza (ESPN, ids de equipo globales), almacén, datos a mano \\
+data/events.py & tiros, tiros al arco, posesión y línea de tiempo de goles y tarjetas \\
+data/mirror.py & cruce con football-data.co.uk (cuotas de Bet365, Elo) \\
+model/filter.py & núcleo: Dixon–Coles dinámico, filtro de Laplace, ajuste prequential en JAX \\
+model/filter\_shots2.py & modelo oficial de dos latentes \\
+model/engine.py & motor por liga y regla de selección del modelo \\
+model/europe.py & capa continental (\code{Region}: Europa y Sudamérica), filtro factorizado \\
+model/crossleague.py & red de ligas, resistencia efectiva, Fiedler, ranking global \\
+model/hodge.py, styles.py & intransitividad y estilos latentes \\
+model/inplay.py, changepoint.py & proceso en vivo y Hawkes; detección de cambios \\
+sim/season.py, tiebreak.py & predictiva posterior, desempates, definiciones, playoffs \\
+sim/split.py & formato argentino: zonas, llave del torneo, promedios, copas \\
+sim/analysis.py & información mutua, ``qué necesita'', cotas enteras, suspenso \\
+sim/rare.py & eventos raros por muestreo por importancia \\
+sim/ucl.py, ucl\_groups.py & Champions con fase liga; formato antiguo para validar \\
+sim/conmebol.py & Libertadores y Sudamericana simuladas juntas \\
+cup.py, cup\_conmebol.py & pronóstico de copas y simulaciones del laboratorio de grupos \\
+eval/ & reglas de puntuación, Shin, backtest walk-forward \\
+pipeline.py, export.py, cli.py, remote.py & pronóstico, exportación, línea de comandos, Supabase y Vercel \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\section{Cómo correr todo}
+
+\begin{comandos}
+pip install -e ".[dev,bayes,plots]"\\
+cadlag update \hfill\textrm{trae resultados de ESPN}\\
+cadlag fit \hfill\textrm{reajusta hiperparámetros}\\
+cadlag forecast \hfill\textrm{simula ligas y copas}\\
+cadlag site \hfill\textrm{exporta los datos del sitio}\\[0.4em]
+python scripts/backtest.py eng.1 2016 \hfill\textrm{R1, R2}\\
+python scripts/nuts\_validation.py eng.1 2025 \hfill\textrm{R3}\\
+python scripts/hodge\_analysis.py 200 \hfill\textrm{R4}\\
+python scripts/styles\_analysis.py 2 \hfill\textrm{R5}\\
+python scripts/crossleague\_analysis.py \hfill\textrm{R6}\\
+python scripts/inplay\_analysis.py \hfill\textrm{R8, R9}\\
+python scripts/changepoint\_analysis.py \hfill\textrm{R10}\\
+python scripts/suspense\_analysis.py 2016 20 \hfill\textrm{R11}\\
+python scripts/rare\_events.py \hfill\textrm{R12}\\
+python scripts/shots2\_analysis.py eng.1:2016 \hfill\textrm{R7, R13}\\
+python scripts/market\_prior\_analysis.py \hfill\textrm{R14}\\
+python scripts/transfer\_edges\_analysis.py \hfill\textrm{R15}\\
+python scripts/season\_compare.py \hfill\textrm{R16--R19}\\
+python scripts/shots2\_vs\_market.py \hfill\textrm{R16, R17}\\
+python scripts/shots2\_norel\_fit.py eng.2:2016 \hfill\textrm{R18}\\
+python scripts/tournament\_backtest.py \hfill\textrm{R19}\\
+python scripts/fit\_extra\_leagues.py \hfill\textrm{ligas de las capas}\\
+python scripts/europe\_fit.py [sudamerica] \hfill\textrm{R20, R21 (partidos)}\\
+python scripts/ucl\_backtest.py \hfill\textrm{R20 (torneos)}\\
+python scripts/conmebol\_backtest.py \hfill\textrm{R21 (torneos)}\\
+pytest \hfill\textrm{pruebas}
+\end{comandos}
+
+Las semillas aleatorias están fijas en los scripts. Los tiempos dependen de la máquina: un backtest de liga toma minutos, el ajuste de una capa continental unos diez minutos y el de una liga nueva de dos latentes unos 40.
+
+\chapter{Hiperparámetros}
+\label{ap:hiper}
+
+Los hiperparámetros del núcleo y del modelo oficial están en las tablas~\ref{tab:hiper_nucleo} y~\ref{tab:hiper_dos}. Los de la capa continental:
+
+\begin{table}[h]
+\centering
+\caption{Hiperparámetros de la capa continental, valores de producción. Las varianzas y desviaciones se ajustan en escala logarítmica y las reversiones en escala logit.}
+\label{tab:hiper_capa}
+\small
+\begin{tabularx}{\textwidth}{@{}>{\leavevmode\color{cdblue}}p{2.6cm}Lrr@{}}
+\toprule
+\hd{Parámetro} & \hd{Significado} & \hd{Europa} & \hd{Sudamérica} \\
+\midrule
+$\mu_0,\;\eta_0$ & nivel de goles y localía & $-0{,}22$, $0{,}19$ & $-0{,}36$, $0{,}40$ \\
+$q_g$ & innovación diaria del bloque global & $3\cdot10^{-7}$ & $8\cdot10^{-7}$ \\
+$\tau$ & salto de los offsets entre temporadas & $0{,}020$ & $0{,}014$ \\
+$v_\text{off}$ & varianza inicial de los offsets de las ligas grandes & $0{,}011$ & $0{,}007$ \\
+$\text{off}_\text{extra},\;v_\text{off,extra}$ & prior de los offsets de las demás ligas & $-0{,}56$, $0{,}008$ & $-0{,}45$, $0{,}021$ \\
+$r$ & forma de la binomial negativa & $932$ & $343$ \\
+$\gamma$ & traslado de la fuerza doméstica & $0{,}89$ & $0{,}80$ \\
+$v_\text{dom}$ & error de la linealización & $3\cdot10^{-4}$ & $5\cdot10^{-4}$ \\
+$v_u,\;\varphi_u,\;s_u$ & residuo continental: prior, reversión, ruido & $0{,}009$, $0{,}85$, $0{,}033$ & $0{,}013$, $0{,}76$, $0{,}066$ \\
+$q_t$ & innovación diaria de un equipo sin liga & $9\cdot10^{-6}$ & $1\cdot10^{-5}$ \\
+$v_0,\;\varphi,\;s$ & equipo sin liga: prior, reversión, ruido & $0{,}15$, $0{,}95$, $0{,}057$ & $0{,}077$, $0{,}93$, $0{,}073$ \\
+$\beta_1,\beta_2,\beta_3,\beta_\text{prev}$ & prior de un debutante según la copa & $-0{,}29$, $-0{,}47$, $-0{,}67$, $-0{,}87$ & $-0{,}05$, $-0{,}12$, ---, $-0{,}06$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+\chapter{Formato de los archivos de simulación}
+\label{ap:formato}
+
+Los archivos \code{<liga>.sims.gz} son una matriz de bytes comprimida con gzip, una fila por temporada simulada (20.000) y $W$ columnas. Con $K$ los próximos partidos ($K=10$) y $n$ los equipos de la liga:
+
+\begin{table}[h]
+\centering
+\caption{Registro de una temporada simulada en las ligas.}
+\label{tab:formato}
+\small
+\begin{tabularx}{\textwidth}{@{}>{\ttfamily\small}p{2.6cm}rL@{}}
+\toprule
+\hd{Campo} & \hd{Bytes} & \hd{Contenido} \\
+\midrule
+o & $K$ & resultado sorteado de cada partido: 0 local, 1 empate, 2 visita \\
+sqrtq & $3K$ & $P(L,E,V\mid\text{fuerzas})$ de cada partido como $\lfloor255\sqrt p\rceil$ \\
+pts & $n$ & puntos finales de cada equipo \\
+pos & $n$ & posición final (0 es el primero); con ascenso, el bit 7 marca ``asciende'' \\
+zpts, zinfo & $2n$ & solo Argentina: puntos del torneo en curso; puesto en la zona (bits 0--3), campeón del torneo (4), descenso (5), Libertadores (6) y Sudamericana (7) del año siguiente \\
+stage & $n$ & solo Champions: etapa alcanzada (0 fase liga, 1 playoff, 2 octavos, \dots, 6 campeón) \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+El archivo compartido de las copas con fase de grupos (\code{conmebol.sims.gz}) tiene 10.000 ediciones. Por edición, para cada copa desde su offset, \code{o[K]} y \code{sqrtq[3K]} de sus próximos $K=16$ partidos de grupo; después, para los $n$ equipos de las dos copas, \code{pts[n]} (puntos de grupo), \code{gpos[n]} (puesto en su grupo, 0--3), \code{lib[n]} y \code{sud[n]} (etapa alcanzada en cada copa más uno; 0 si no la juega). El JSON de cada copa trae los offsets, el orden de los equipos, su copa y su grupo, y los partidos con su fecha y sus probabilidades.
+
+\chapter{Resumen de validaciones}
+\label{ap:validaciones}
+
+\begin{table}[h]
+\centering
+\caption{Pruebas que verifican cada pieza.}
+\label{tab:validaciones}
+\small
+\begin{tabularx}{\textwidth}{@{}p{5.4cm}L@{}}
+\toprule
+\hd{Prueba} & \hd{Resultado} \\
+\midrule
+Filtro de Laplace frente a NUTS (R3) & correlación de medias 0,9999; desviaciones 4\,\% menores; variación total en posiciones 0,022 \\
+Predictiva posterior frente a plug-in (R2) & cobertura del 90\,\%: 85\,\% frente a 76\,\% en pretemporada \\
+Calibración del ascenso (R17) & 3,0 ascensos esperados por temporada; tramos dentro del error \\
+Muestreo por importancia frente a fuerza bruta (R12) & $2{,}41\cdot10^{-4}\pm5$\,\% frente a $2{,}48\cdot10^{-4}\pm8$\,\% \\
+Nulo de Hodge (R4) & proporción cíclica 0,596 frente a 0,590; $p=0{,}81$ \\
+Prueba espectral de estilos (R5) & 8,55 frente al percentil 95 del nulo, 9,66 \\
+Residuos tras cambios detectados (R10) & $0{,}025\pm0{,}046$ en los 10 partidos siguientes \\
+Regla de selección del modelo & ninguna liga vuelve al núcleo \\
+Ajuste propio de las ligas de las capas & $+0{,}019$ nats por partido frente a hiperparámetros compartidos \\
+Laboratorio de grupos (2026 desde la fecha 1) & muestra efectiva 8.310 de 10.000 con tres resultados fijados \\
+Pruebas automáticas & 18 casos de \code{pytest} \\
+\bottomrule
+\end{tabularx}
+\end{table}

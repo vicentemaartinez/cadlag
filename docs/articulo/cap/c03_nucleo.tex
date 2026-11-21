@@ -1,0 +1,131 @@
+\chapter{El núcleo: Dixon–Coles dinámico}
+\label{cap:nucleo}
+
+Este capítulo construye el modelo de referencia, un Dixon–Coles~\cite{dixoncoles1997} con fuerzas dinámicas en tiempo continuo. El modelo oficial (capítulo~\ref{cap:dos}) hereda de él el gauge, la actualización de Laplace, el ajuste de hiperparámetros y la simulación; por eso todo se desarrolla aquí primero, en el caso más simple.
+
+\section{Modelo}
+
+Para una liga con $N$ equipos el estado es
+\[
+x_t=(\alpha_{1:N},\,\delta_{1:N},\,\mu,\,\eta)\in\R^{2N+2},
+\]
+con $\alpha_i$ el ataque y $\delta_i$ la defensa del equipo $i$ (mayor es mejor), $\mu$ el nivel de goles de la liga y $\eta$ la localía. Entre dos partidos separados por $\Delta$ días el estado hace un paseo aleatorio gaussiano,
+\begin{equation}
+x_{t+\Delta}=x_t+\varepsilon,\qquad \varepsilon\sim\N(0,\Delta\,Q),\qquad Q=\operatorname{diag}\big(\sigma_\text{eq}^2\mathbf 1_{2N},\,\sigma_\mu^2,\,\sigma_\eta^2\big).
+\label{eq:paseo}
+\end{equation}
+Entre temporadas hay un salto con reversión a la media, $(\alpha,\delta)\mapsto\varphi\,(\alpha,\delta)+\N(0,\sigma_s^2 I)$, y un equipo recién ascendido reemplaza su estado por un prior propio $\N\big((a_\text{asc},d_\text{asc}),\,v_\text{asc}I\big)$. Es la estructura de Glickman y Stern~\cite{glickmanstern1998}: paseo aleatorio en días calendario dentro de la temporada y una transición explícita en el receso. Koopman y Lit~\cite{koopmanlit2015} estiman en la Premier autorregresiones semanales con coeficiente $0{,}9985$, que dentro de una temporada son indistinguibles de un paseo aleatorio.
+
+Un partido entre $i$ (local) y $j$ observa el marcador $(X,Y)$ con
+\begin{equation}
+\log\lambda=\mu+\eta\,(1-\text{neutral})+\alpha_i-\delta_j,\qquad \log\nu=\mu+\alpha_j-\delta_i,
+\label{eq:predictor}
+\end{equation}
+y la verosimilitud de Dixon–Coles
+\[
+\DC(x,y;\lambda,\nu,\rho)=\tau_{\lambda,\nu}(x,y)\,\Pois(x;\lambda)\,\Pois(y;\nu),\qquad
+\tau_{\lambda,\nu}(x,y)=\begin{cases}1-\lambda\nu\rho & (0,0)\\ 1+\lambda\rho & (0,1)\\ 1+\nu\rho & (1,0)\\ 1-\rho & (1,1)\\ 1 & \text{en otro caso.}\end{cases}
+\]
+La corrección solo toca las cuatro celdas de marcador bajo y conserva la masa exactamente: con $p(0,1)=\nu\,p(0,0)$, $p(1,0)=\lambda\,p(0,0)$ y $p(1,1)=\lambda\nu\,p(0,0)$ bajo independencia, las correcciones suman $p(0,0)\,\rho\,(-\lambda\nu+\lambda\nu+\lambda\nu-\lambda\nu)=0$. En la práctica $\rho$ sale levemente negativo (en la Premier, $-0{,}045$), lo que agrega empates 0-0 y 1-1.
+
+\section{Gauge}
+\label{sec:gauge}
+
+\begin{proposicion}[Invarianza de gauge] \dem
+Sea $A$ el conjunto de equipos activos y $g_a=(\mathbf 1_A,0,-1,0)$, $g_d=(0,\mathbf 1_A,1,0)$. Para todo partido entre equipos de $A$, $(\log\lambda,\log\nu)$ es invariante bajo $x\mapsto x+a\,g_a+d\,g_d$.
+\end{proposicion}
+
+\begin{proof}
+Con $x+a\,g_a+d\,g_d$, $\log\lambda$ cambia en $-a+a-d+d=0$ (el nivel baja $a$ y sube $d$, el ataque del local sube $a$ y la defensa de la visita sube $d$), y lo mismo $\log\nu$.
+\end{proof}
+
+La verosimilitud es entonces plana en un subespacio de dimensión dos y la posterior queda determinada por el prior en esa dirección: sin fijar el gauge, la covarianza crece sin límite en direcciones que ninguna predicción ve. Se fija con la proyección oblicua
+\[
+\Pi=I-G\,(C^\top G)^{-1}C^\top,\qquad G=[g_a\;g_d],\qquad C=\big[(\mathbf 1_A,0,0,0)\;\;(0,\mathbf 1_A,0,0)\big],
+\]
+que cumple $\Pi^2=\Pi$, $C^\top\Pi=0$ (impone $\sum_A\alpha=\sum_A\delta=0$) y $\Pi g=0$ para $g\in\operatorname{span}G$. Cambia el representante sin cambiar ninguna predicción. A diferencia de la proyección ortogonal, conserva la interpretación de $\mu$ como el nivel de goles del equipo promedio, y se aplica a la media y a la covarianza ($m\mapsto\Pi m$, $P\mapsto\Pi P\Pi^\top$) cada vez que cambia el conjunto de equipos activos.
+
+\section{Actualización de Laplace}
+\label{sec:laplace}
+
+La verosimilitud de un partido depende del estado solo a través de $z=Ax\in\R^2$, el par de predictores lineales~\eqref{eq:predictor}. Si la creencia previa es $x\sim\N(m,P)$, entonces $z\sim\N(\bar z,S)$ con $\bar z=Am$ y $S=APA^\top$.
+
+\begin{lema}[Actualización por el predictor] \dem
+Si se reemplaza la posterior de $z$ por una gaussiana $\N(z^*,\Sigma^*)$, la distribución de $x$ que conserva el condicional $x\mid z$ del prior es gaussiana con
+\[
+m'=m+K(z^*-\bar z),\qquad P'=P+K(\Sigma^*-S)K^\top,\qquad K=PA^\top S^{-1}.
+\]
+\end{lema}
+
+\begin{proof}
+Bajo el prior, $x\mid z\sim\N\big(m+K(z-\bar z),\,P-KSK^\top\big)$. Integrando $z\sim\N(z^*,\Sigma^*)$, la media es $m+K(z^*-\bar z)$ y la covarianza $P-KSK^\top+K\Sigma^*K^\top$.
+\end{proof}
+
+Con $z^*=\argmax_z\{\log\N(z;\bar z,S)+\log L(z)\}$ y $\Sigma^*=\big(S^{-1}-\nabla^2\log L(z^*)\big)^{-1}$ se obtiene la actualización de Laplace, que coincide con el filtro de Kalman extendido iterado~\cite{bellcathey1993}. Toda la no gaussianidad se resuelve en un problema de Newton en $\R^2$ (seis iteraciones con el paso acotado), y el costo por partido es $O(D^2)$ con $D=2N+2$: el producto $PA^\top$ y la corrección de rango dos de $P$. Una temporada de la Premier se filtra en milisegundos.
+
+\section{Elo como caso límite}
+\label{sec:elo}
+
+\begin{proposicion}[Elo de goles] \dem
+Con verosimilitud de Poisson independiente ($\rho=0$), un solo paso de Newton desde $\bar z$ y $S$ pequeño, la actualización del ataque del local con $P=vI$ es
+\[
+\alpha_i'=\alpha_i+v\,(x-\hat\lambda),
+\]
+un Elo sobre goles cuya constante $K$ es la varianza del estado. En régimen estacionario $v$ es el punto fijo de la ecuación de Riccati $v=v+\sigma_\text{eq}^2\Delta-v^2\hat\lambda/(1+v\hat\lambda)$, es decir $v^*\approx\sqrt{\sigma_\text{eq}^2\Delta/\hat\lambda}$.
+\end{proposicion}
+
+\begin{proof}
+Con $S$ pequeño, $z^*-\bar z\approx S\,\nabla\log L(\bar z)=S\,(x-\hat\lambda,\;y-\hat\nu)^\top$, de modo que $m'-m=KS\nabla\log L=PA^\top(x-\hat\lambda,\;y-\hat\nu)^\top$. La fila de $A$ del ataque del local tiene un $1$ en la primera componente, lo que da la fórmula. La recursión de la varianza es la de Kalman para una observación escalar con información de Fisher $\hat\lambda$, más la varianza $\sigma_\text{eq}^2\Delta$ agregada entre partidos; su punto fijo, para $v\hat\lambda\ll1$, es el indicado.
+\end{proof}
+
+La regla ``elegir $K$'' de Elo queda reemplazada por una cantidad derivada: la razón entre la volatilidad de la fuerza y la información que aporta un partido. Es la misma lectura de Glicko~\cite{glickman1999} y de TrueSkill~\cite{herbrich2007}: todo sistema de rating es una verosimilitud, un prior de paseo aleatorio y una regla de proyección gaussiana.
+
+\section{Ajuste de hiperparámetros}
+\label{sec:prequential}
+
+Los doce hiperparámetros $\theta$ (tabla~\ref{tab:hiper_nucleo}) se eligen maximizando la \emph{verosimilitud prequential}~\cite{dawid1984}, la suma de los logaritmos de las predictivas un paso adelante:
+\begin{equation}
+\ell(\theta)=\sum_k\log p_\theta(x_k,y_k\mid\mathcal F_{k-1}),
+\label{eq:prequential}
+\end{equation}
+\[
+\log p_\theta(x_k,y_k\mid\mathcal F_{k-1})\approx-\tfrac12(z^*-\bar z)^\top S^{-1}(z^*-\bar z)+\log L(z^*)+\tfrac12\log|\Sigma^*|-\tfrac12\log|S|.
+\]
+Cada término es la aproximación de Laplace de la evidencia de un partido dado lo anterior, un subproducto de la actualización. Maximizar $\ell$ equivale a elegir el modelo que mejor habría pronosticado cada partido con lo que se sabía antes, que es exactamente lo que se le pide.
+
+El filtro completo está escrito en JAX~\cite{jax2018} como un \code{lax.scan} sobre los partidos, de modo que $\nabla_\theta\ell$ se obtiene por diferenciación automática a través de unas 6.000 actualizaciones, incluidas las iteraciones de Newton. Con gradientes exactos, L-BFGS-B~\cite{lbfgsb} converge en decenas de iteraciones. La primera temporada de cada liga se excluye del criterio (es el arranque del filtro), y para los backtests el ajuste usa solo las temporadas anteriores a 2016 (2020 en Chile).
+
+\begin{table}[h]
+\centering
+\caption{Hiperparámetros del núcleo y valores ajustados en la Premier con datos hasta 2015-16.}
+\label{tab:hiper_nucleo}
+\small
+\begin{tabularx}{\textwidth}{@{}>{\leavevmode\color{cdblue}}p{2.6cm}Lr@{}}
+\toprule
+\hd{Parámetro} & \hd{Significado} & \hd{Premier} \\
+\midrule
+$\sigma_\text{eq}$ & desviación de la innovación de cada fuerza, por $\sqrt{\text{día}}$ & $0{,}0025$ \\
+$\sigma_\mu,\sigma_\eta$ & innovación del nivel de goles y de la localía & $0{,}0007$ \\
+$\varphi$ & reversión de las fuerzas entre temporadas & $0{,}93$ \\
+$\sigma_s$ & ruido del salto entre temporadas & $0{,}077$ \\
+$\rho$ & dependencia de Dixon–Coles & $-0{,}045$ \\
+$a_\text{asc},d_\text{asc},v_\text{asc}$ & prior de los ascendidos & $-0{,}15$, $-0{,}12$, $0{,}017$ \\
+$v_0$ & varianza inicial de las fuerzas & $0{,}047$ \\
+$\mu_0,\eta_0$ & nivel de goles y localía iniciales (log) & $0{,}32$, $0{,}23$ \\
+\bottomrule
+\end{tabularx}
+\end{table}
+
+En escala anual, $\sigma_\text{eq}=0{,}0025$ por $\sqrt{\text{día}}$ es una desviación de $0{,}048$ log-goles por año: la fuerza de un equipo cambia dentro de la temporada mucho menos que entre temporadas ($\sigma_s=0{,}077$, con $\varphi=0{,}93$).
+
+\section{Muestreo exacto de Dixon–Coles}
+
+\begin{proposicion}[Aceptación–rechazo] \dem
+Sea $\tau_{\max}=\max_{x,y}\tau_{\lambda,\nu}(x,y)$. Proponer $(X,Y)\sim\Pois(\lambda)\otimes\Pois(\nu)$ y aceptar con probabilidad $\tau(X,Y)/\tau_{\max}$ produce exactamente $\DC(\lambda,\nu,\rho)$, con tasa de aceptación $1/\tau_{\max}$.
+\end{proposicion}
+
+\begin{proof}
+Es aceptación–rechazo con densidad objetivo $\tau\cdot(\Pois\otimes\Pois)$, propuesta $\Pois\otimes\Pois$ y cota $\tau_{\max}$: la densidad de lo aceptado es proporcional a $\tau(x,y)\,\Pois(x)\Pois(y)$, que suma uno porque $\tau$ conserva la masa.
+\end{proof}
+
+Para valores típicos ($|\rho|\le0{,}1$, $\lambda,\nu\le3$) la aceptación supera el 80\,\% y la simulación vectorizada solo repite los pocos partidos rechazados.

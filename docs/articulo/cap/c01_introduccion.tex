@@ -1,0 +1,98 @@
+\chapter{Introducción}
+
+\section{Motivación}
+
+Las matrices de posiciones finales, popularizadas por Opta y FiveThirtyEight, resumen una temporada en un cuadro: cada fila es un equipo, cada columna un puesto y cada celda la probabilidad de terminar ahí. Detrás hay siempre dos piezas: un modelo que estima la fuerza de cada equipo y una simulación que juega muchas veces los partidos que faltan. Las versiones publicadas rara vez dicen cómo están hechas, y casi nunca muestran si sus probabilidades están calibradas.
+
+El proyecto empezó como una pregunta concreta: ¿se puede construir esa matriz con un modelo abierto, en el que cada pieza tenga una justificación matemática y cada afirmación se pruebe con datos que el modelo no vio? Desde ahí creció en dos direcciones. Hacia adentro, para medir qué parte de lo que se sabe sobre un equipo es fuerza y qué parte es suerte, y para que la incertidumbre sobre esa fuerza llegue honestamente a la tabla. Hacia afuera, para comparar equipos de ligas distintas, lo que exigen la Champions, la Libertadores y la Sudamericana.
+
+El resultado es \cadlag: un motor en Python que se actualiza solo cada dos horas y un sitio estático (\href{https://cadlag.vercel.app}{cadlag.vercel.app}) con nueve ligas (Premier League, LaLiga, Serie A, Bundesliga, Ligue 1, Championship, la Liga de Primera de Chile, el Brasileirão y la Liga Profesional argentina) y tres copas (Champions League, Copa Libertadores y Copa Sudamericana).
+
+\section{Preguntas}
+
+El trabajo se organiza en torno a cuatro preguntas:
+
+\begin{enumerate}[label=\textsf{\bfseries\color{cdblue}P\arabic*.}]
+\item ¿Qué tan cerca del mercado de apuestas puede llegar un modelo bayesiano dinámico abierto al pronosticar partidos, y qué estructura del modelo de goles aporta de verdad?
+\item ¿Están calibradas las probabilidades de la tabla final? En particular, ¿cuánto importa propagar la incertidumbre sobre las fuerzas en vez de fijarlas en su estimación?
+\item ¿Cómo se comparan equipos y ligas que casi nunca se enfrentan, y cuánta información hay realmente para hacerlo?
+\item De las ideas atractivas sobre el fútbol (estilos que se anulan entre sí, intransitividad, rachas de goles, el mercado de pases), ¿cuáles sobreviven a una prueba fuera de muestra?
+\end{enumerate}
+
+\section{Estrategia}
+
+Todas las piezas comparten una misma columna vertebral (figura~\ref{fig:flujo}). Un \emph{modelo de estado} describe cómo cambian las fuerzas en el tiempo y cómo un partido las observa. Un \emph{filtro} actualiza la creencia sobre ese estado después de cada partido, con una aproximación gaussiana cuya exactitud se verifica contra un muestreador exacto. Una \emph{simulación predictiva posterior} juega lo que falta con las reglas reales. Una \emph{evaluación con reglas de puntuación propias} compara variantes en datos que el ajuste no vio.
+
+\begin{figure}[t]
+\centering
+\begin{tikzpicture}[
+  box/.style={draw=cdblue!60,fill=cdbluebg,rounded corners=2pt,align=center,font=\sffamily\scriptsize,minimum width=2.75cm,minimum height=0.95cm,text width=2.6cm},
+  boxp/.style={box,draw=cdpurple!60,fill=cdboxbg},
+  lab/.style={font=\sffamily\scriptsize\bfseries,text=cdpurple},
+  arr/.style={-{Stealth[length=4pt]},cdgray,line width=0.6pt}]
+\node[lab] at (0,0.95) {DATOS};
+\node[lab] at (3.55,0.95) {MODELO};
+\node[lab] at (7.1,0.95) {SIMULACIÓN};
+\node[lab] at (10.65,0.95) {SALIDA};
+\node[box] (d1) at (0,0) {ESPN: 189 mil partidos,\\ tiros al arco};
+\node[box] (d2) at (0,-1.45) {Reglas de cada liga\\ y datos a mano};
+\node[box] (d3) at (0,-2.9) {Cuotas de Bet365\\ (solo para evaluar)};
+\node[boxp] (m1) at (3.55,0) {Filtro de Laplace\\ por liga (cap.~\ref{cap:nucleo}--\ref{cap:dos})};
+\node[boxp] (m2) at (3.55,-1.45) {Capa continental\\ (cap.~\ref{cap:capa})};
+\node[boxp] (m3) at (3.55,-2.9) {Hiperparámetros:\\ verosimilitud prequential};
+\node[box] (s1) at (7.1,0) {20.000 temporadas\\ con reglas reales};
+\node[box] (s2) at (7.1,-1.45) {Copas: grupos,\\ fase liga y cuadro};
+\node[box] (s3) at (7.1,-2.9) {Información mutua,\\ ``qué necesita'', raros};
+\node[box] (o1) at (10.65,0) {Matrices y\\ probabilidades};
+\node[box] (o2) at (10.65,-1.45) {Laboratorio\\ ``¿Y si…?''};
+\node[box] (o3) at (10.65,-2.9) {Backtests R1--R21\\ (parte~V)};
+\draw[arr] (d1)--(m1); \draw[arr] (d2)--(s1); \draw[arr] (d1.east)--(m2.west);
+\draw[arr] (m3)--(m2); \draw[arr] (m1)--(s1); \draw[arr] (m2)--(s2); \draw[arr] (m1)--(m2);
+\draw[arr] (s1)--(o1); \draw[arr] (s2)--(o1); \draw[arr] (s1)--(s3); \draw[arr] (s1.east)--(o2.west); \draw[arr] (d3)--(o3);
+\draw[arr] (s3)--(o3);
+\end{tikzpicture}
+\caption{Flujo del proyecto. Los datos alimentan un filtro por liga y una capa continental que usa las fuerzas domésticas; la simulación produce las matrices, el laboratorio y las cantidades derivadas. Las cuotas solo se usan para evaluar.}
+\label{fig:flujo}
+\end{figure}
+
+\section{Cómo leer las afirmaciones}
+
+El texto distingue tres clases de enunciados, marcados al margen de cada uno. Los \emph{resultados citados} \lit provienen de la literatura y llevan referencia. Los \emph{resultados demostrados aquí} \dem tienen su demostración en el texto; casi todos son cortos, pero cada uno justifica una decisión de diseño. Las \emph{conjeturas} \conj son afirmaciones plausibles que el proyecto evalúa con datos. Los resultados empíricos se numeran de R1 a R21 en el orden en que se obtuvieron. Todos se miden fuera de muestra, con hiperparámetros ajustados solo con temporadas anteriores al período de prueba, y se reportan con su error estándar. Cuando una diferencia no alcanza dos errores estándar se dice así, aunque apunte en la dirección esperada.
+
+\section{Organización del documento}
+
+La Parte~I plantea el problema y describe los datos (capítulo~\ref{cap:datos}). La Parte~II construye el modelo de un partido: el núcleo de goles con su filtro (capítulo~\ref{cap:nucleo}), el modelo oficial de dos latentes (capítulo~\ref{cap:dos}) y la validación del filtro contra un muestreador exacto (capítulo~\ref{cap:nuts}). La Parte~III pasa de las fuerzas a la tabla: la simulación predictiva posterior (capítulo~\ref{cap:sim}), los formatos especiales (capítulo~\ref{cap:formatos}), las cantidades que se leen de las simulaciones (capítulo~\ref{cap:lectura}) y los escenarios por reponderación (capítulo~\ref{cap:escenarios}). La Parte~IV trata la comparación entre ligas (capítulo~\ref{cap:red}), la capa continental (capítulo~\ref{cap:capa}) y la simulación de las copas (capítulo~\ref{cap:copas}). La Parte~V reúne la evaluación y todos los resultados, y la Parte~VI la implementación. Los apéndices detallan cómo reproducir cada número, los hiperparámetros, el formato de los archivos de simulación y las validaciones.
+
+\section{Notación}
+
+La tabla~\ref{tab:notacion} resume los símbolos principales; cada uno se define en detalle donde aparece por primera vez.
+
+\begin{table}[h]
+\centering
+\caption{Notación principal.}
+\label{tab:notacion}
+\small
+\begin{tabularx}{\textwidth}{@{}>{\leavevmode\color{cdblue}}p{3.6cm}L@{}}
+\toprule
+\hd{Símbolo} & \hd{Significado} \\
+\midrule
+$i,j$; $N$ & equipos (local $i$, visita $j$); número de equipos de una liga \\
+$x_t\in\R^D$ & estado latente en el instante $t$ (fuerzas de todos los equipos y niveles de la liga) \\
+$m,P$ & media y covarianza de la creencia gaussiana sobre el estado \\
+$\alpha_i,\delta_i$; $\mu,\eta$ & ataque y defensa (núcleo); nivel de goles y localía \\
+$a_i,b_i$; $f_i,g_i$ & crear y evitar tiros al arco; convertirlos y evitar que se conviertan (modelo oficial) \\
+$c,k,\phi$ & nivel de tiros al arco, localía en tiros y logit de la conversión media \\
+$\lambda,\nu$ & goles esperados del local y de la visita \\
+$\DC(\lambda,\nu,\rho)$; $\NB(m,r)$ & Dixon–Coles con dependencia $\rho$; binomial negativa de media $m$ y forma $r$ \\
+$A$, $z=Ax$ & matriz que lleva el estado al predictor lineal del partido \\
+$\theta$ & hiperparámetros (varianzas de innovación, saltos entre temporadas, priors) \\
+$\sigma(\cdot)$ & función logística \\
+$q_{sk}(o)$ & $P(o_k=o\mid$ fuerzas de la simulación $s)$, con $o\in\{L,E,V\}$ \\
+$w_s$; ESS & peso de la simulación $s$ en un escenario; tamaño efectivo de muestra $(\sum w)^2/\sum w^2$ \\
+$(A_\ell,D_\ell)$; $r_\ell$ & offsets de ataque y defensa de la liga $\ell$; fuerza neta $A_\ell+D_\ell$ \\
+$R_{\mathrm{eff}}(\ell,\ell')$ & resistencia efectiva entre dos ligas en el grafo de partidos \\
+$I(O;F)$, $H(\cdot)$ & información mutua y entropía, en bits \\
+RPS, nats & \emph{ranked probability score}; unidades de log-verosimilitud (logaritmo natural) \\
+\bottomrule
+\end{tabularx}
+\end{table}

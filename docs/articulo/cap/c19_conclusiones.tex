@@ -1,0 +1,45 @@
+\chapter{Conclusiones}
+\label{cap:conclusiones}
+
+\section{Respuestas a las cuatro preguntas}
+
+\parrafo{P1. Partidos y mercado.} Un modelo bayesiano dinámico que solo ve resultados y tiros al arco queda a unos 0,004 a 0,006 de RPS de Bet365 en las ligas europeas, una distancia del orden de la que separa al ganador de un concurso de pronósticos de un modelo mediocre. Lo que achica esa distancia es estructura en el modelo de goles: separar crear ocasiones de convertirlas mejora la predicción en el conjunto de las nueve ligas con $z=5{,}9$, y no la empeora en ninguna.
+
+\parrafo{P2. Calibración.} Las probabilidades de la tabla final están razonablemente calibradas si, y solo si, se propaga la incertidumbre sobre las fuerzas. El plug-in subestima la varianza de los puntos a la mitad en pretemporada; la predictiva posterior la lleva cerca de lo correcto. El ascenso de la Championship está calibrado por tramos. Queda una subestimación residual al comienzo de la temporada, atribuible a cambios que un paseo aleatorio gaussiano no anticipa.
+
+\parrafo{P3. Comparar ligas.} La información entre ligas tiene la geometría de una red eléctrica: la varianza de la diferencia entre dos ligas es una resistencia efectiva, y entre Europa y Sudamérica es diez veces mayor que dentro de Europa. Para pronosticar copas, anclar cada equipo a su liga con la fuerza doméstica linealizada mejora claramente los partidos ($z=7{,}2$ en Europa y $4{,}1$ en Sudamérica) y, en menor medida, los torneos.
+
+\parrafo{P4. Ideas atractivas.} No hay evidencia de estilos latentes ni de intransitividad más allá de las fuerzas; los goles no se contagian, se inhiben; el filtro no llega tarde a los cambios de régimen; y el mercado de pases no agrega nada que la regresión a la media no sepa ya. Son resultados negativos, pero limpios: cada prueba tenía potencia para detectar el efecto y un nulo calibrado.
+
+\begin{conclusion}
+\textsf{\bfseries\color{cdblue}Conclusión general.} Un modelo abierto, con cada pieza justificada y cada afirmación probada fuera de muestra, alcanza una precisión cercana a la del mercado y una incertidumbre honesta. Lo que más importó fue propagar la incertidumbre hasta la tabla y separar la fuerza de la suerte en la conversión. Las ideas más vistosas no sobrevivieron a las pruebas, y saberlo también es un resultado.
+\end{conclusion}
+
+\section{Lo que aporta el enfoque}
+
+\begin{enumerate}
+\item \textbf{Un filtro exacto donde importa.} La actualización de Laplace reduce toda la no linealidad a un Newton en dos o cuatro dimensiones, deja el resto en álgebra gaussiana y permite gradientes exactos de la verosimilitud prequential a través de miles de partidos. Contra NUTS, el error es del orden del ruido de Monte Carlo.
+\item \textbf{Simular es condicionar.} Guardar $P(o\mid x_s)$ por simulación convierte cualquier escenario en una reponderación exacta, que corre en el navegador. La misma idea, con una familia exponencial, da las curvas de ``qué necesita'' sin huecos y, con una inclinación, probabilidades de una en millones.
+\item \textbf{Geometría de la información entre ligas.} La resistencia efectiva dice cuánto se sabe de cada comparación y por dónde entra la información, antes de mirar ningún offset.
+\item \textbf{Negativos bien hechos.} Los nulos calibrados y la revisión de los datos (los tiros al arco corruptos) evitaron dos conclusiones falsas.
+\end{enumerate}
+
+\section{Limitaciones}
+
+\begin{itemize}
+\item \textbf{Sin alineaciones ni lesiones.} El modelo no sabe quién juega. Es la mayor parte de la distancia con el mercado y de la subestimación residual de la varianza.
+\item \textbf{Un paseo aleatorio gaussiano.} Los cambios bruscos (entrenador, mercado de invierno) se absorben de a poco. La detección de cambios mostró que el filtro se pone al día, pero un prior con colas pesadas o saltos podría hacerlo antes.
+\item \textbf{Aproximaciones del laboratorio.} El reordenamiento por puntos ignora los desempates por diferencia de gol, y lo que depende de una llave se toma de una tasa por posición.
+\item \textbf{Pocas ediciones de copas.} Ocho Champions y doce Libertadores o Sudamericanas no alcanzan para evaluar la calibración del campeón; las mejoras de la capa continental se ven en partidos y en etapas, no en campeones.
+\item \textbf{Datos de una sola fuente.} ESPN es una API no oficial, con errores que hay que detectar a mano, y no trae tandas de penales ni descuentos de puntos.
+\end{itemize}
+
+\section{Trabajo futuro}
+
+\begin{itemize}
+\item \textbf{Europa League y Conference League}, que la capa europea ya observa y que el código de la Champions puede simular con poco más que su formato.
+\item \textbf{Un suavizador} de Rauch–Tung–Striebel para describir la historia de cada equipo, no solo su estado de hoy.
+\item \textbf{Innovaciones con colas pesadas}, como mezcla de escalas, para que un cambio de régimen se refleje antes.
+\item \textbf{Alineaciones} cuando haya una fuente estable, como una covariable que mueve el estado de un partido sin cambiar el paseo aleatorio.
+\item \textbf{Calibración del campeón} en copas, acumulando ediciones con el formato actual.
+\end{itemize}

@@ -200,9 +200,11 @@ def need_curves(res: SimResult, st: SeasonState, team: int, n_rel: int, league=N
     np.subtract.at(base.T, opp, theirs0.T)                                # sin esos partidos
     pall = getattr(res, "_pall", None)
     if pall is None:   # P(L, E, V | fuerzas) de todos los partidos pendientes, una vez por corrida
-        pall = np.concatenate([outcome_probs_given(res.rates[0][:, c:c + 40], res.rates[1][:, c:c + 40], params,
-                                                   params.get("kind", "dc")).astype(np.float32)
-                               for c in range(0, res.rates[0].shape[1], 40)], axis=1)
+        nT = res.rates[0].shape[1]
+        pall = (np.concatenate([outcome_probs_given(res.rates[0][:, c:c + 40], res.rates[1][:, c:c + 40], params,
+                                                    params.get("kind", "dc")).astype(np.float32)
+                                for c in range(0, nT, 40)], axis=1)
+                if nT else np.zeros((S, 0, 3), np.float32))   # fase regular terminada (p. ej. Argentina en playoffs)
         res._pall = pall
     p = pall[:, ks].astype(float)
     ptm = np.where(home[None, :, None], PT[0][None, None, :], PT[1][None, None, :])   # (1, K, 3)

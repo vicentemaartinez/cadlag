@@ -1,0 +1,34 @@
+\chapter{Escenarios por reponderación}
+\label{cap:escenarios}
+
+El laboratorio ``¿Y si…?'' del sitio permite fijar resultados de los próximos partidos y ver cómo cambia la matriz al instante. Volver a simular 20.000 temporadas en el navegador no es viable. La solución es que condicionar en resultados es reponderar las simulaciones que ya existen.
+
+\section{Condicionar es reponderar}
+
+Para cada temporada simulada $s$ se guardan, además del resultado sorteado de los próximos $K$ partidos, sus probabilidades dadas las fuerzas de esa simulación, $q_{sk}(o)=P(o_k=o\mid x_s)$ con $o\in\{L,E,V\}$. Fijar resultados $o_k=\bar o_k$ para $k\in F$ es condicionar.
+
+\begin{proposicion}[Reponderación] \dem
+Sea $T$ cualquier función de la temporada (la tabla final, el campeón). Dado el estado, los partidos son independientes, así que
+\[
+\E\big[T\mid o_F=\bar o_F\big]=\frac{\E\big[\,\E[T\mid x,\,o_F=\bar o_F]\;\prod_{k\in F}q_k(\bar o_k\mid x)\,\big]}{\E\big[\prod_{k\in F}q_k(\bar o_k\mid x)\big]}.
+\]
+Cada temporada simulada recibe el peso $w_s=\prod_{k\in F}q_{sk}(\bar o_k)$, y en ella se reemplaza el resultado sorteado de cada partido fijado por el resultado elegido.
+\end{proposicion}
+
+\begin{proof}
+Por Bayes sobre el estado, $p(x\mid o_F=\bar o_F)\propto p(x)\prod_{k\in F}q_k(\bar o_k\mid x)$. Dado $x$ y $o_F$, el resto de la temporada tiene la misma ley que dado $x$ solo, porque los partidos son condicionalmente independientes. Por eso $\E[T\mid x,o_F=\bar o_F]$ se estima con la misma simulación, cambiando los resultados de los partidos fijados.
+\end{proof}
+
+Es la versión Rao–Blackwell~\cite{casella1996} del filtrado por rechazo, que descartaría todas las temporadas cuyo resultado sorteado no coincide: usa todas, y su varianza es menor. Con muchos partidos fijados el peso se concentra en pocas temporadas; el sitio muestra el tamaño efectivo de muestra de Kish~\cite{kish1965}, $(\sum_sw_s)^2/\sum_sw_s^2$, y avisa cuando baja de 400.
+
+Fijar un resultado también informa sobre la fuerza. Si se fija una derrota del favorito, las temporadas en que el favorito era más débil pesan más, y su probabilidad de salir campeón baja más de lo que bajaría solo por perder tres puntos. Es la respuesta correcta: el usuario está preguntando por los mundos en que ese partido sale así.
+
+\section{Aproximaciones}
+
+Reemplazar el resultado sorteado por el fijado cambia los puntos de dos equipos, y la tabla hay que reordenarla. El navegador no tiene los goles de cada partido simulado, así que reordena por puntos y desempata con el orden que tenía cada equipo en esa simulación. Es una aproximación a los desempates por diferencia de gol, que no se vuelven a sortear; su efecto es pequeño porque solo actúa entre equipos empatados en puntos.
+
+Lo que depende de una llave que se jugó después de la tabla (el ascenso por playoffs, el campeón de un torneo argentino, una copa) no se puede volver a jugar en el navegador. Si los resultados fijados no cambian el orden, se usa lo que pasó en la simulación. Si lo cambian, se reemplaza por $P(\text{lo logra}\mid\text{equipo},\text{posición})$, estimada con todas las temporadas simuladas. En las copas, donde un equipo puede terminar en un puesto en muy pocas ediciones, esa tasa se encoge hacia la de cualquier equipo en esa posición con un peso de 50 ediciones, para no heredar una tasa ruidosa. El descenso argentino se recalcula exacto con los promedios.
+
+\section{Copas con fase de grupos}
+
+En la Libertadores y la Sudamericana el laboratorio funciona mientras quedan partidos de grupo, con los próximos 16 de cada copa (una fecha). Las dos copas comparten un archivo de 10.000 ediciones con, por edición, el resultado sorteado y $q$ de esos partidos, y para cada equipo sus puntos de grupo, su puesto en el grupo y la etapa alcanzada en cada copa. Al fijar un resultado distinto del sorteado se corrigen los puntos y se reordenan solo los grupos tocados. Si el puesto de un equipo no cambia se usa la etapa sorteada; si cambia, $P(\text{etapa}\mid\text{equipo},\text{puesto})$, encogida hacia la de cualquier equipo de su copa en ese puesto. Solo se fijan partidos de la copa que se mira, y el efecto sobre la otra (un tercero de la Libertadores que pasa al playoff de la Sudamericana) queda en la etapa sorteada. El formato de los archivos está en el apéndice~\ref{ap:formato}.

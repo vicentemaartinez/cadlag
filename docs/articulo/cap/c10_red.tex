@@ -1,0 +1,41 @@
+\chapter{Las ligas como red eléctrica}
+\label{cap:red}
+
+Dentro de una liga todos juegan contra todos y las fuerzas se identifican bien. Entre ligas, en cambio, la información llega por pocos canales: los partidos de copa entre clubes de ligas distintas y los equipos que cambian de división. Este capítulo formaliza cuánta información hay y muestra que tiene la estructura de una red eléctrica. Es la base conceptual de la capa continental del capítulo siguiente, que es la que se usa en producción.
+
+\section{Modelo}
+
+A las fuerzas de cada equipo, estimadas por el filtro de su liga y relativas a ella, se suman offsets de liga y temporada $(A_{\ell,s},D_{\ell,s})$, con un paseo aleatorio entre temporadas $\theta_{\ell,s}=\theta_{\ell,s-1}+\N(0,\tau^2I)$ y la Premier League como referencia fija. Los offsets se observan de dos maneras:
+\begin{enumerate}[label=(\alph*)]
+\item los partidos de copa entre equipos de ligas distintas, con verosimilitud de Poisson en la que las fuerzas de cada filtro entran como \emph{offset} conocido;
+\item los equipos que cambian de división, como aristas gaussianas sobre la fuerza neta $r=A+D$: la fuerza del equipo al final de la temporada en la liga $\ell$ más $r_{\ell,s}$ debería parecerse a su fuerza al comienzo de la siguiente en $\ell'$ más $r_{\ell',s+1}$.
+\end{enumerate}
+El parámetro $\tau$ se elige maximizando la evidencia de Laplace; sale $\tau=0{,}12$. El grafo tiene 14 ligas (las primeras y segundas divisiones de Inglaterra, España, Italia, Alemania, Francia y Brasil, más Argentina y Chile), 2.208 partidos de copa y 611 cambios de división.
+
+\section{Resistencia efectiva}
+
+\begin{proposicion}[Varianza como resistencia] \dem
+En la aproximación de Laplace, la precisión posterior de las fuerzas netas de liga es
+\[
+H=L_w+L_\text{tiempo}+\Lambda_\text{ref},\qquad L_w=\sum_e w_e\,(\mathbf e_\ell-\mathbf e_{\ell'})(\mathbf e_\ell-\mathbf e_{\ell'})^\top,
+\]
+con $L_w$ el laplaciano del grafo de ligas ponderado por la información de Fisher de cada partido o cambio de división, $L_\text{tiempo}$ el laplaciano de la cadena temporal (conductancia $1/\tau^2$) y $\Lambda_\text{ref}$ el anclaje de la referencia. Entonces
+\[
+\Var(r_\ell-r_{\ell'}\mid\text{datos})=(\mathbf e_\ell-\mathbf e_{\ell'})^\top H^{-1}(\mathbf e_\ell-\mathbf e_{\ell'})=R_\text{eff}(\ell,\ell'),
+\]
+la resistencia efectiva entre los nodos $\ell$ y $\ell'$ de la red con conductancias $w$.
+\end{proposicion}
+
+\begin{proof}
+Cada observación de una diferencia $r_\ell-r_{\ell'}$ con información $w_e$ aporta a la log-posterior el término $-\tfrac{w_e}2(r_\ell-r_{\ell'}-\cdot)^2$, cuya hessiana es $w_e(\mathbf e_\ell-\mathbf e_{\ell'})(\mathbf e_\ell-\mathbf e_{\ell'})^\top$. Sumando todas las aristas se obtiene un laplaciano ponderado, y lo mismo para el paseo aleatorio entre temporadas. La referencia fija ancla un nodo a tierra, lo que hace $H$ invertible. La forma cuadrática $(\mathbf e_\ell-\mathbf e_{\ell'})^\top H^{-1}(\mathbf e_\ell-\mathbf e_{\ell'})$ es la definición de resistencia efectiva en una red con conductancias dadas por los pesos~\cite{kleinrandic1993}.
+\end{proof}
+
+La equivalencia trae consecuencias inmediatas, conocidas en la teoría de redes eléctricas~\cite{doylesnell1984}. Agregar partidos es agregar resistencias en paralelo: la varianza solo baja (principio de monotonía de Rayleigh). Y la incertidumbre entre dos continentes está acotada por debajo por la resistencia del ``puente'' de partidos intercontinentales, por muchos partidos que haya dentro de cada continente: el Mundial de Clubes conecta Europa y Sudamérica con unas pocas aristas.
+
+\section{Espectro}
+
+En el grafo de ligas (pesos iguales al número de partidos y cambios de división, laplaciano normalizado), el segundo autovalor es la conectividad algebraica de Fiedler~\cite{fiedler1973} y su autovector separa el grafo por su cuello de botella, en el sentido de la desigualdad de Cheeger. En los datos, $\lambda_2=0{,}017$ frente a $\lambda_3=0{,}61$: hay un solo corte casi desconectado, y el vector de Fiedler pone a las cuatro ligas sudamericanas de un lado y a las diez europeas del otro. Las resistencias lo cuantifican: dentro de Europa, entre $0{,}02$ y $0{,}05$; entre Europa y Sudamérica, entre $0{,}10$ y $0{,}16$ (Inglaterra–Chile, $0{,}134$).
+
+\section{Lo que se usa y lo que no}
+
+Este modelo da la comparación global del sitio (la pestaña ``Mundo'': offsets de liga con su incertidumbre y un ranking de clubes en escala común) y los resultados R6 y R15. Para pronosticar copas se usa la capa continental del capítulo~\ref{cap:capa}, que estima lo mismo dentro de cada continente con un modelo más rico (más ligas, un residuo por equipo y un filtro partido a partido). Los traspasos se probaron como aristas adicionales del grafo, con un modelo de comparación por pares $P(A\to B)=\sigma\big(\beta(r_B-r_A)\big)$: la validación cruzada eligió $\beta=0$ (R15), y no se usan.

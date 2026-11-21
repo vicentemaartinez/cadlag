@@ -1,0 +1,36 @@
+\chapter{Cómo se evalúa}
+\label{cap:eval}
+
+\section{Reglas de puntuación}
+
+Un pronóstico probabilístico se evalúa con una \emph{regla de puntuación propia}: una cuyo valor esperado, bajo la distribución verdadera $q$, se optimiza informando exactamente $q$~\cite{gneiting2007}. Con una regla impropia, un pronosticador puede ganar puntaje diciendo algo que no cree.
+
+\begin{itemize}
+\item \textbf{Log score}, $-\log p(o)$, en nats. Es la única regla propia y local: solo mira la probabilidad asignada a lo que pasó. Es la métrica principal del proyecto, porque es la que maximiza el ajuste prequential y la que se suma entre partidos de manera coherente.
+\item \textbf{RPS} (\emph{ranked probability score})~\cite{epstein1969,constantinou2012}, $\frac{1}{K-1}\sum_{k<K}(F_k-\ind\{o\le k\})^2$ con $F$ la distribución acumulada sobre resultados ordenados (local, empate, visita). Es propia y premia acercarse al resultado en el orden. Es la métrica habitual en la literatura de fútbol y la que se reporta para comparar con el mercado.
+\item \textbf{Brier} para eventos binarios (campeón, ascenso, descenso).
+\end{itemize}
+
+\begin{proposicion}[La distancia de Wasserstein no es propia] \dem
+La distancia de Wasserstein-1 entre la distribución pronosticada y el resultado observado, $\sum_k|F_k-\ind\{o\le k\}|$, no es una regla propia: se minimiza en esperanza poniendo toda la masa en la mediana de $q$.
+\end{proposicion}
+
+\begin{proof}
+Su valor esperado bajo $q$, con $Q$ la acumulada de $q$, es $\sum_k\big[F_k(1-Q_k)+(1-F_k)Q_k\big]$, lineal en cada $F_k$. Se minimiza con $F_k=1$ si $Q_k>1/2$ y $F_k=0$ si $Q_k<1/2$: una distribución degenerada en la mediana de $q$.
+\end{proof}
+
+La observación importa porque la distancia de Wasserstein es atractiva para comparar matrices de posiciones (respeta el orden de los puestos) y aparece en trabajos aplicados. Para la posición final se usa el log score de la posición real, $-\log P(\text{posición observada})$, promediado por equipo.
+
+\section{El mercado como vara}
+
+Las cuotas de cierre de Bet365 reúnen la información de todo el mercado hasta el pitazo inicial: alineaciones, lesiones, rotaciones. Ningún modelo que solo vea resultados y tiros debería superarlas, y no es el objetivo. Sirven para medir distancia: cuánto le falta a un modelo abierto para llegar al mercado, y si una variante achica o agranda esa distancia. Las probabilidades se obtienen con el método de Shin. La comparación se hace en los mismos partidos: los que tienen cuotas en el espejo de football-data.
+
+\section{Protocolo}
+
+\parrafo{Fuera de muestra.} Cada evaluación es \emph{walk-forward}. Los hiperparámetros se ajustan solo con temporadas anteriores al período de prueba (2016 en Europa y Brasil, 2020 en Chile) y el filtro corre hacia adelante pronosticando cada partido antes de verlo. Los backtests de temporada pronostican la tabla final en pretemporada y al 25, 50 y 75\,\% de la temporada, con lo que se sabía ese día; los de copas, al empezar la fase principal, en fechas intermedias y antes de cada ronda.
+
+\parrafo{Diferencias pareadas.} Dos modelos se comparan partido a partido (o equipo a equipo) en los mismos datos, y se reporta la media de las diferencias con su error estándar. Para las temporadas y las copas, el error se agrupa por temporada o edición, porque los pronósticos de una misma temporada están correlacionados.
+
+\parrafo{Combinar ligas.} Para resumir una ganancia entre ligas se usa el promedio ponderado por la inversa de la varianza, con su error estándar $(\sum_\ell1/s_\ell^2)^{-1/2}$, y la heterogeneidad se mide con el estadístico $Q$ de Cochran. Así ``ayuda en el conjunto'' tiene un número, y ``ayuda en esta liga pero no en esa'' se puede distinguir del ruido.
+
+\parrafo{Calibración.} Además de los puntajes se miden cobertura de intervalos (los puntos finales caen en el intervalo de 90\,\% con la frecuencia correcta), el error cuadrático estandarizado $\E[z^2]$ de los puntos, que debería ser 1, y curvas de confiabilidad por tramos de probabilidad para eventos binarios.
