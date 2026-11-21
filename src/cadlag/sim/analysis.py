@@ -92,6 +92,8 @@ def match_importance(res: SimResult, n_relegated: int, top: int | None = None) -
                          date=res.todo["date"].iloc[k], p_home=p[0], p_draw=p[1], p_away=p[2],
                          mi_title=i_title, mi_relegation=i_rel, mi_promotion=i_pro))
     df = pd.DataFrame(rows)
+    if df.empty:       # solo quedan partidos sin fecha publicada
+        return df
     top_col = "mi_promotion" if res.promoted is not None else "mi_title"
     df["mi_total"] = df[top_col] + df["mi_relegation"]
     df = df.sort_values("mi_total", ascending=False)
@@ -320,7 +322,11 @@ def position_bounds(st: SeasonState, time_limit: float = 20.0) -> pd.DataFrame:
     M = len(todo)
     hi, ai = todo["hi"].to_numpy(), todo["ai"].to_numpy()
     rem = np.bincount(np.r_[hi, ai], minlength=n)
-    BIG = 3 * rem.max() + P0.max() - P0.min() + 3 if M else 1
+    if M == 0:   # fase regular terminada: las posiciones ya están decididas salvo empates en puntos
+        return pd.DataFrame([dict(team=st.teams[i], points=P0[i], remaining=0,
+                                  best_position=1 + int((P0 > P0[i]).sum()),
+                                  worst_position=int((P0 >= P0[i]).sum())) for i in range(n)])
+    BIG = 3 * rem.max() + P0.max() - P0.min() + 3
     nx = 3 * M
     out = []
     for i in range(n):

@@ -163,7 +163,7 @@ def forecast_league(comp: str, matches=None, teams=None, n_sims=20000, refit=Fal
             needs[key] = dict(points_for_50=pc.attrs.get("need_50"), points_for_90=pc.attrs.get("need_90"),
                               curve=[[int(g), round(float(q), 4), round(float(pr), 5)] for g, q, pr in
                                      zip(pc["points_gained"], pc["p_objective"], pc["p_reach"])])
-        if bounds is not None and t in bounds.index:
+        if bounds is not None and t in bounds.index and bounds.loc[t, ["best_position", "worst_position"]].notna().all():
             bp, wp = bounds.loc[t, "best_position"], bounds.loc[t, "worst_position"]
             needs["best_position"], needs["worst_position"] = int(bp), int(wp)
             needs["title_clinched"] = bool(wp == 1) and X is None
